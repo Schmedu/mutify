@@ -185,10 +185,13 @@ private struct LocationPermissionRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if state.locationPromptSeemsStuck {
-                Text("macOS took the request but showed no dialog, and clearing the parked one didn't help either. An earlier prompt may be open on another display — or grant access directly in System Settings.")
+                Text("macOS took the request but showed no dialog, twice. System Settings is open — find “Mutify” in the Location Services list and switch it on. That grants exactly the same access.")
                     .font(.caption)
                     .foregroundStyle(.orange)
-                Button("Clear stuck dialog and try again") { state.clearStuckLocationPrompt() }
+                HStack {
+                    Button("Open System Settings again") { state.openLocationSettings() }
+                    Button("Try the prompt once more") { state.clearStuckLocationPrompt() }
+                }
             }
             HStack {
                 if state.canPromptForLocation {

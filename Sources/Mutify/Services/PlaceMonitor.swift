@@ -302,8 +302,12 @@ final class PlaceMonitor: NSObject {
     }
 
     func openLocationSettings() {
-        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocationServices")!
-        NSWorkspaceOpener.open(url)
+        // macOS 13 renamed this pane; the old identifier silently does nothing.
+        NSWorkspaceOpener.openFirst([
+            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_LocationServices",
+            "x-apple.systempreferences:com.apple.preference.security?Privacy_LocationServices",
+            "x-apple.systempreferences:com.apple.preference.security",
+        ])
     }
 }
 
@@ -358,7 +362,10 @@ extension PlaceMonitor: CLLocationManagerDelegate {
                 self.hasRetriedAfterStuckPrompt = true
                 self.clearStuckPromptAndRetry()
             } else {
+                // Asked twice, no dialog either time. Stop pretending the prompt
+                // will show up and take the user where they can just switch it on.
                 self.promptSeemsStuck = true
+                self.openLocationSettings()
             }
         }
     }
