@@ -1,3 +1,4 @@
+import AppKit
 import CoreLocation
 import CoreWLAN
 import Foundation
@@ -6,81 +7,115 @@ import Network
 
 /// Answers "where am I?" — today that means the Wi-Fi network name.
 ///
-/// Reading the SSID through CoreWLAN needs Location Services authorization on
-/// macOS 14 and later. `ipconfig getsummary` still reports it without that
-/// permission, so it serves as a fallback: Mutify stays useful if the user says
-/// no, and simply works better if they say yes.
+/// Reading the SSID needs Location Services authorization on macOS 14 and later,
+/// and there is no way around it: without the grant, CoreWLAN returns nil and
+/// `ipconfig getsummary` answers with the literal string `<redacted>`. Mutify
+/// treats both as "unknown" and stands down rather than guessing.
 @MainActor
 final class PlaceMonitor: NSObject {
 
     var onEvent: ((Trigger) -> Void)?
 
     private let wifiClient = CWWiFiClient.shared()
-    private let locationManager = CLLocationManager()
+    /// Created on first use, never during app start-up: a CLLocationManager
+    /// built before NSApplication has finished launching never connects to
+    /// locationd, and then authorization requests vanish without a prompt.
+    private lazy var locationManager: CLLocationManager = {
+        let manager = CLLocationManager()
+        manager.delegate = self
+        return manager
+    }()
     private var pathMonitor: NWPathMonitor?
     private var pathUsesWiFi = false
-    private var cachedFallbackSSID: (value: String?, at: Date)?
+    private var cachedSnapshot: (value: NetworkSnapshot, at: Date)?
+    private var pathHasNetwork = false
     private var locationBurstTask: Task<Void, Never>?
+    private var activationObserver: NSObjectProtocol?
 
     private(set) var authorizationStatus: CLAuthorizationStatus = .notDetermined
 
-    override init() {
-        super.init()
-        locationManager.delegate = self
+    /// Reads the live status, creating the manager if this is the first ask.
+    func refreshAuthorizationStatus() {
         authorizationStatus = locationManager.authorizationStatus
     }
 
     // MARK: - Current place
 
     func currentPlace() -> PlaceSignal {
-        guard let interface = wifiClient.interface() else { return .noWiFi }
-        guard interface.powerOn() else { return .noWiFi }
+        let snapshot = networkSnapshot()
+        let identity = NetworkIdentity(ssid: snapshot.ssid, routerMAC: snapshot.routerMAC)
+        if identity.isIdentifiable { return .network(identity) }
 
-        if let ssid = interface.ssid(), !ssid.isEmpty {
-            return .wifi(ssid: ssid)
+        // Nothing to go on. Say which kind of nothing it is: being on a network
+        // we can't identify is not the same as being on none.
+        guard let interface = wifiClient.interface(), interface.powerOn() else {
+            return pathHasNetwork ? .unavailable : .noWiFi
         }
-        if let ssid = fallbackSSID(interfaceName: interface.interfaceName), !ssid.isEmpty {
-            return .wifi(ssid: ssid)
-        }
-
-        // Associated with something we can't name: that is a permission problem,
-        // not a "there is no network" situation, and the two must not be confused.
         let associated = interface.interfaceMode() != .none || pathUsesWiFi
         return associated ? .unavailable : .noWiFi
     }
 
-    /// `ipconfig getsummary en0` prints `SSID : <name>` when associated.
-    private func fallbackSSID(interfaceName: String?) -> String? {
-        if let cached = cachedFallbackSSID, Date().timeIntervalSince(cached.at) < 5 {
-            return cached.value
-        }
-        let name = interfaceName ?? "en0"
-        let value = Self.runIPConfig(interface: name)
-        cachedFallbackSSID = (value, Date())
-        return value
+    private struct NetworkSnapshot {
+        var ssid: String?
+        var routerMAC: String?
     }
 
-    private static func runIPConfig(interface: String) -> String? {
+    /// Both lookups are cheap but not free; a few seconds of cache covers the
+    /// bursts of events that arrive when a network changes.
+    private func networkSnapshot() -> NetworkSnapshot {
+        if let cached = cachedSnapshot, Date().timeIntervalSince(cached.at) < 5 {
+            return cached.value
+        }
+        let snapshot = NetworkSnapshot(ssid: readSSID(), routerMAC: Self.defaultGatewayMAC())
+        cachedSnapshot = (snapshot, Date())
+        return snapshot
+    }
+
+    /// The network name, if macOS is willing to say. It only is with Location
+    /// access — CoreWLAN returns nil without it and `ipconfig` answers
+    /// `<redacted>`, so both go through the same sanitiser.
+    private func readSSID() -> String? {
+        guard let interface = wifiClient.interface(), interface.powerOn() else { return nil }
+        if let ssid = NetworkName.clean(interface.ssid()) { return ssid }
+        return NetworkName.clean(Self.runIPConfig(interface: interface.interfaceName ?? "en0"))
+    }
+
+    /// The default gateway's hardware address: no permission, no prompt, and it
+    /// tells apart two networks that share a name.
+    static func defaultGatewayMAC() -> String? {
+        guard let route = run("/sbin/route", ["-n", "get", "default"]) else { return nil }
+        var gateway: String?
+        for line in route.split(separator: "\n") {
+            let parts = line.split(separator: ":", maxSplits: 1)
+            guard parts.count == 2, parts[0].trimmingCharacters(in: .whitespaces) == "gateway" else { continue }
+            gateway = parts[1].trimmingCharacters(in: .whitespaces)
+            break
+        }
+        guard let gateway, !gateway.isEmpty else { return nil }
+
+        guard let arp = run("/usr/sbin/arp", ["-n", gateway]) else { return nil }
+        return NetworkIdentity.parseMAC(fromARP: arp)
+    }
+
+    private static func run(_ path: String, _ arguments: [String]) -> String? {
         let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/sbin/ipconfig")
-        process.arguments = ["getsummary", interface]
+        process.executableURL = URL(fileURLWithPath: path)
+        process.arguments = arguments
         let pipe = Pipe()
         process.standardOutput = pipe
         process.standardError = FileHandle.nullDevice
-        do {
-            try process.run()
-        } catch {
-            return nil
-        }
+        do { try process.run() } catch { return nil }
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
-        guard let output = String(data: data, encoding: .utf8) else { return nil }
+        return String(data: data, encoding: .utf8)
+    }
 
+    private static func runIPConfig(interface: String) -> String? {
+        guard let output = run("/usr/sbin/ipconfig", ["getsummary", interface]) else { return nil }
         for line in output.split(separator: "\n") {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             guard trimmed.hasPrefix("SSID :") else { continue }
-            let value = trimmed.dropFirst("SSID :".count).trimmingCharacters(in: .whitespaces)
-            return value.isEmpty ? nil : value
+            return NetworkName.clean(String(trimmed.dropFirst("SSID :".count)))
         }
         return nil
     }
@@ -96,10 +131,12 @@ final class PlaceMonitor: NSObject {
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
             let usesWiFi = path.usesInterfaceType(.wifi)
+            let satisfied = path.status == .satisfied
             Task { @MainActor [weak self] in
                 guard let self else { return }
                 self.pathUsesWiFi = usesWiFi
-                self.cachedFallbackSSID = nil
+                self.pathHasNetwork = satisfied
+                self.cachedSnapshot = nil
                 self.onEvent?(.networkChange)
             }
         }
@@ -112,14 +149,29 @@ final class PlaceMonitor: NSObject {
         pathMonitor?.cancel()
         pathMonitor = nil
         locationBurstTask?.cancel()
+        clearActivationObserver()
     }
 
     private func handleWiFiEvent() {
-        cachedFallbackSSID = nil
+        cachedSnapshot = nil
         onEvent?(.networkChange)
     }
 
     // MARK: - Location permission
+
+    /// Distinguishes "never asked" from "asked and refused" — they need
+    /// different things from the user.
+    var authorizationDescription: String {
+        switch authorizationStatus {
+        case .notDetermined: return "not asked yet"
+        case .restricted: return "restricted by policy"
+        case .denied: return "denied — must be changed in System Settings"
+        case .authorizedAlways: return "granted"
+        @unknown default: return "unknown (\(authorizationStatus.rawValue))"
+        }
+    }
+
+    var canPrompt: Bool { authorizationStatus == .notDetermined }
 
     var needsLocationPermission: Bool {
         switch authorizationStatus {
@@ -128,7 +180,50 @@ final class PlaceMonitor: NSObject {
         }
     }
 
+    /// Asks for Location access — but only while the app is actually active.
+    /// macOS silently drops the prompt otherwise, which looks exactly like the
+    /// request never happening.
     func requestLocationPermission() {
+        guard canPrompt else {
+            // Already answered once: only System Settings can change it now.
+            openLocationSettings()
+            return
+        }
+
+        NSApplication.shared.activate(ignoringOtherApps: true)
+
+        if NSApplication.shared.isActive {
+            performLocationRequest()
+        } else {
+            waitForActivation()
+        }
+    }
+
+    private func waitForActivation() {
+        guard activationObserver == nil else { return }
+        Self.trace("app not active yet; waiting for activation")
+        activationObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.clearActivationObserver()
+                self.performLocationRequest()
+            }
+        }
+    }
+
+    private func clearActivationObserver() {
+        if let observer = activationObserver {
+            NotificationCenter.default.removeObserver(observer)
+            activationObserver = nil
+        }
+    }
+
+    private func performLocationRequest() {
+        Self.trace("requesting: status=\(locationManager.authorizationStatus.rawValue) servicesEnabled=\(CLLocationManager.locationServicesEnabled()) active=\(NSApp.isActive)")
         locationManager.requestAlwaysAuthorization()
         // Asking alone doesn't always surface the prompt for a background-only
         // app; a short location burst does, and costs nothing.
@@ -139,6 +234,22 @@ final class PlaceMonitor: NSObject {
             self.locationManager.startUpdatingLocation()
             try? await Task.sleep(for: .seconds(3))
             self.locationManager.stopUpdatingLocation()
+        }
+    }
+
+    nonisolated static func trace(_ message: String) {
+        let line = "[location] \(Date()) \(message)\n"
+        FileHandle.standardError.write(Data(line.utf8))
+        // Also to disk: launched through LaunchServices there is no stderr to read.
+        let url = Paths.logDirectory.appendingPathComponent("debug.log")
+        if let data = line.data(using: .utf8) {
+            if let handle = try? FileHandle(forWritingTo: url) {
+                defer { try? handle.close() }
+                _ = try? handle.seekToEnd()
+                try? handle.write(contentsOf: data)
+            } else {
+                try? data.write(to: url)
+            }
         }
     }
 
@@ -175,14 +286,18 @@ extension PlaceMonitor: CLLocationManagerDelegate {
         let status = manager.authorizationStatus
         Task { @MainActor [weak self] in
             guard let self else { return }
+            PlaceMonitor.trace("authorization changed to \(status.rawValue)")
             self.authorizationStatus = status
-            self.cachedFallbackSSID = nil
+            self.cachedSnapshot = nil
             self.onEvent?(.networkChange)
         }
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        // Nothing to do: the SSID fallback covers us, and the UI already shows
-        // the authorization state.
+        PlaceMonitor.trace("location failed: \(error.localizedDescription) [\((error as NSError).domain) \((error as NSError).code)]")
+    }
+
+    nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        PlaceMonitor.trace("location updated (\(locations.count))")
     }
 }

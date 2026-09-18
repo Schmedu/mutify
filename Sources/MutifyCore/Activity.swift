@@ -120,8 +120,8 @@ public enum OverrideOption: String, CaseIterable, Sendable, Identifiable {
             let target = todayAtSeven > now ? todayAtSeven : calendar.date(byAdding: .day, value: 1, to: todayAtSeven)
             return target.map { Override.until($0) }
         case .untilNetworkChange:
-            guard let ssid = place.ssid else { return nil }
-            return .untilNetworkChange(ssid: ssid)
+            guard let key = place.identity?.primaryKey else { return nil }
+            return .untilNetworkChange(key: key)
         }
     }
 }

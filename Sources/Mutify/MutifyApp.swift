@@ -23,15 +23,11 @@ struct MutifyApp: App {
             exit(0)
         }
 
+        // Only hand the model over here. Everything that touches the system
+        // waits for applicationDidFinishLaunching — CoreLocation in particular
+        // is inert if it's set up any earlier.
         let state = self.state
-        Task { @MainActor in
-            AppEnvironment.state = state
-            state.start()
-            if state.needsSetup {
-                state.requestLocationPermission()
-                SettingsWindow.show()
-            }
-        }
+        MainActor.assumeIsolated { AppEnvironment.state = state }
     }
 }
 
@@ -40,6 +36,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Menu bar only: no Dock icon, no window on launch.
         NSApp.setActivationPolicy(.accessory)
         reportStatusItemPlacement()
+
+        guard let state = AppEnvironment.state else { return }
+        state.start()
+
+        // Only a genuine first run gets to take over the screen. A missing
+        // permission is reported in the menu bar and waited on — an app that
+        // grabs focus every time it launches is an app you end up quitting.
+        if state.isFirstRun {
+            SettingsWindow.show()
+        }
+
+        // Test hook: does the permission prompt actually appear? Standing in for
+        // a click on "Ask me now", so the flow can be checked on a machine
+        // nobody is working on.
+        let askedOnCommandLine = CommandLine.arguments.contains("--ask-location")
+        if askedOnCommandLine || ProcessInfo.processInfo.environment["MUTIFY_ASK_LOCATION"] == "1" {
+            SettingsWindow.show()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                state.requestLocationPermission()
+            }
+        }
     }
 
     /// `MUTIFY_DEBUG_STATUS=1` reports where the menu bar icon ended up. A full

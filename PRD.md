@@ -324,6 +324,33 @@ Ship-worthy for daily personal use at **M5**.
   friction not worth accepting for an app that is meant to be invisible.
 - Bundle id `com.schmedu.mutify`.
 
+## 14a. Addendum — network identity (2026-09-18, after first build)
+
+FR-7 assumed the SSID was obtainable. It isn't: without Location Services macOS
+returns the literal string `<redacted>` rather than failing, from every interface
+tried (CoreWLAN, `ipconfig getsummary`, `system_profiler SPAirPortDataType`).
+Storing that as a network name would silently merge every unidentifiable network
+into one allow-listable entry — the worst possible failure for this app.
+
+The permission itself proved unreliable to obtain: macOS suppresses the prompt
+for a background-only app that isn't frontmost, and refuses it outright for one
+launched from an SSH session (`kCLErrorDenied` with the status still
+"not determined").
+
+So network identity is now a **set of keys**, not a name:
+
+- `router:<gateway MAC>` — the default gateway's hardware address, read with no
+  permission at all, and stable per network.
+- the SSID, when Location access makes it readable.
+
+A network matches a list if **any** of its keys is on it, so an entry added
+before the grant keeps working after it. This also resolves the "two networks
+named FRITZ!Box" row in §11, which SSIDs alone could not. Networks without a
+readable name are displayed as *"Unnamed network (router …2b:3c)"* and can be
+given a label by the user.
+
+Location access is now an enhancement (friendly names), not a requirement.
+
 ## 15. Open questions
 
 1. **Default enforcement mode** — this PRD picks "On change" as the default for

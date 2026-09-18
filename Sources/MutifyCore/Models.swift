@@ -82,18 +82,22 @@ public struct OutputContext: Equatable, Sendable, Codable {
 
 /// Where we are, as far as we can tell.
 public enum PlaceSignal: Equatable, Sendable {
-    /// Associated with a Wi-Fi network whose name we could read.
-    case wifi(ssid: String)
+    /// On a network we can identify — by name, by router, or both.
+    case network(NetworkIdentity)
     /// Definitely not on Wi-Fi: Ethernet only, Wi-Fi off, or offline.
     case noWiFi
-    /// Associated with *something* we can't name — almost always a missing
-    /// Location permission. Deliberately different from `noWiFi`.
+    /// On a network we can't pin down at all. Deliberately different from
+    /// `noWiFi`: not knowing where we are is not the same as being nowhere.
     case unavailable
 
-    public var ssid: String? {
-        if case .wifi(let ssid) = self { return ssid }
+    public var identity: NetworkIdentity? {
+        if case .network(let identity) = self { return identity }
         return nil
     }
+
+    public var ssid: String? { identity?.ssid }
+
+    public var keys: [String] { identity?.keys ?? [] }
 }
 
 public enum Decision: String, Equatable, Sendable {
@@ -109,7 +113,7 @@ public enum Override: Equatable, Sendable, Codable {
     /// Master switch off until switched back on.
     case indefinite
     /// Sound allowed until the Mac joins a different network.
-    case untilNetworkChange(ssid: String)
+    case untilNetworkChange(key: String)
 
     public func isActive(now: Date, place: PlaceSignal) -> Bool {
         switch self {
@@ -119,10 +123,10 @@ public enum Override: Equatable, Sendable, Codable {
             return now < date
         case .indefinite:
             return true
-        case .untilNetworkChange(let ssid):
+        case .untilNetworkChange(let key):
             // Still on the same network → still active. Anything else ends it,
             // including losing Wi-Fi entirely.
-            return place.ssid?.caseInsensitiveCompare(ssid) == .orderedSame
+            return place.keys.contains { $0.caseInsensitiveCompare(key) == .orderedSame }
         }
     }
 

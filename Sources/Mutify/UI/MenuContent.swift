@@ -17,9 +17,8 @@ struct MenuContent: View {
         }
 
         if state.locationPermissionMissing, state.place == .unavailable {
-            Button("Let Mutify see your Wi-Fi network…") {
-                state.requestLocationPermission()
-            }
+            Button("Grant Location access…") { state.requestLocationPermission() }
+            Button("Open System Settings…") { state.openLocationSettings() }
         }
 
         if state.isOverrideActive {
@@ -32,13 +31,13 @@ struct MenuContent: View {
 
         Divider()
 
-        if let ssid = state.place.ssid {
-            let policy = state.settings.policy(forSSID: ssid)
+        if let name = state.currentNetworkName {
+            let policy = state.currentNetworkPolicy
             if policy != .allow {
-                Button("Add “\(ssid)” to Allow list") { state.addCurrentNetwork(to: .allow) }
+                Button("Add “\(name)” to Allow list") { state.addCurrentNetwork(to: .allow) }
             }
             if policy != .mute {
-                Button("Add “\(ssid)” to Mute list") { state.addCurrentNetwork(to: .mute) }
+                Button("Add “\(name)” to Mute list") { state.addCurrentNetwork(to: .mute) }
             }
         }
 
@@ -61,7 +60,7 @@ struct MenuContent: View {
 
     private var availableOverrides: [OverrideOption] {
         OverrideOption.allCases.filter { option in
-            option != .untilNetworkChange || state.place.ssid != nil
+            option != .untilNetworkChange || state.place.identity != nil
         }
     }
 }

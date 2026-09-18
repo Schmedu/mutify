@@ -20,8 +20,11 @@ public struct Settings: Codable, Equatable, Sendable {
     /// 0...1, or nil for "restore exactly what it was".
     public var restoreCap: Double?
     public var notifyOnMute: Bool
-    /// Networks seen before, so lists can be built without being there.
+    /// Network keys seen before, so lists can be built without being there.
     public var seenNetworks: [String]
+    /// Network key → a name the user gave it. Matters for networks identified
+    /// only by their router, which have no name of their own.
+    public var networkLabels: [String: String]
     /// Device UID → last known name, for the Devices tab.
     public var seenDevices: [String: String]
     public var hasCompletedOnboarding: Bool
@@ -39,6 +42,7 @@ public struct Settings: Codable, Equatable, Sendable {
         restoreCap: Double? = nil,
         notifyOnMute: Bool = true,
         seenNetworks: [String] = [],
+        networkLabels: [String: String] = [:],
         seenDevices: [String: String] = [:],
         hasCompletedOnboarding: Bool = false
     ) {
@@ -54,6 +58,7 @@ public struct Settings: Codable, Equatable, Sendable {
         self.restoreCap = restoreCap
         self.notifyOnMute = notifyOnMute
         self.seenNetworks = seenNetworks
+        self.networkLabels = networkLabels
         self.seenDevices = seenDevices
         self.hasCompletedOnboarding = hasCompletedOnboarding
     }
@@ -75,6 +80,7 @@ public struct Settings: Codable, Equatable, Sendable {
         restoreCap = try c.decodeIfPresent(Double.self, forKey: .restoreCap)
         notifyOnMute = try c.decodeIfPresent(Bool.self, forKey: .notifyOnMute) ?? d.notifyOnMute
         seenNetworks = try c.decodeIfPresent([String].self, forKey: .seenNetworks) ?? d.seenNetworks
+        networkLabels = try c.decodeIfPresent([String: String].self, forKey: .networkLabels) ?? d.networkLabels
         seenDevices = try c.decodeIfPresent([String: String].self, forKey: .seenDevices) ?? d.seenDevices
         hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? d.hasCompletedOnboarding
     }
@@ -85,16 +91,20 @@ public struct Settings: Codable, Equatable, Sendable {
         ssid.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    public static func list(_ list: [String], contains ssid: String) -> Bool {
-        let needle = normalized(ssid)
+    public static func list(_ list: [String], contains key: String) -> Bool {
+        let needle = normalized(key)
         guard !needle.isEmpty else { return false }
         return list.contains { normalized($0).caseInsensitiveCompare(needle) == .orderedSame }
     }
 
-    public mutating func add(_ ssid: String, to policy: PlacePolicy) {
-        let value = Settings.normalized(ssid)
-        guard !value.isEmpty else { return }
-        remove(ssid)
+    public static func list(_ list: [String], containsAny keys: [String]) -> Bool {
+        keys.contains { Settings.list(list, contains: $0) }
+    }
+
+    public mutating func add(_ key: String, to policy: PlacePolicy) {
+        let value = Settings.normalized(key)
+        guard !value.isEmpty, !NetworkName.isPlaceholder(value) else { return }
+        remove(key)
         switch policy {
         case .allow: allowList.append(value)
         case .mute: muteList.append(value)
@@ -103,25 +113,49 @@ public struct Settings: Codable, Equatable, Sendable {
         muteList.sort { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
     }
 
+    /// Adds every way this network can be recognised, so the entry survives
+    /// macOS starting — or stopping — to reveal the name.
+    public mutating func add(_ identity: NetworkIdentity, to policy: PlacePolicy) {
+        for key in identity.keys { add(key, to: policy) }
+    }
+
     public mutating func remove(_ ssid: String) {
         let value = Settings.normalized(ssid)
         allowList.removeAll { Settings.normalized($0).caseInsensitiveCompare(value) == .orderedSame }
         muteList.removeAll { Settings.normalized($0).caseInsensitiveCompare(value) == .orderedSame }
     }
 
-    /// Which list an SSID is on, if any.
+    /// Which list a single key is on, if any.
     public func policy(forSSID ssid: String) -> PlacePolicy? {
-        // Deny wins: an SSID on both lists is muted.
-        if Settings.list(muteList, contains: ssid) { return .mute }
-        if Settings.list(allowList, contains: ssid) { return .allow }
+        policy(forKeys: [ssid])
+    }
+
+    /// Which list a network is on, if any. Deny wins.
+    public func policy(forKeys keys: [String]) -> PlacePolicy? {
+        if Settings.list(muteList, containsAny: keys) { return .mute }
+        if Settings.list(allowList, containsAny: keys) { return .allow }
         return nil
+    }
+
+    public func policy(for identity: NetworkIdentity) -> PlacePolicy? {
+        policy(forKeys: identity.keys)
     }
 
     public mutating func noteSeen(ssid: String) {
         let value = Settings.normalized(ssid)
-        guard !value.isEmpty, !Settings.list(seenNetworks, contains: value) else { return }
+        guard !value.isEmpty, !NetworkName.isPlaceholder(value),
+              !Settings.list(seenNetworks, contains: value) else { return }
         seenNetworks.append(value)
         if seenNetworks.count > 50 { seenNetworks.removeFirst(seenNetworks.count - 50) }
+    }
+
+    public mutating func noteSeen(network: NetworkIdentity) {
+        for key in network.keys { noteSeen(ssid: key) }
+    }
+
+    /// True when any of this network's keys is new to us.
+    public func isUnseen(_ network: NetworkIdentity) -> Bool {
+        network.keys.contains { !Settings.list(seenNetworks, contains: $0) }
     }
 
     public mutating func noteSeen(device: OutputContext) {

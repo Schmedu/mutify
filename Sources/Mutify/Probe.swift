@@ -27,15 +27,19 @@ enum Probe {
 
         print("Place")
         switch place {
-        case .wifi(let ssid):
-            let policy = settings.policy(forSSID: ssid).map(\.rawValue) ?? "unlisted → \(settings.unknownNetworkPolicy.rawValue)"
-            print("  Wi-Fi: \(ssid)  [\(policy)]")
+        case .network(let identity):
+            let policy = settings.policy(for: identity).map(\.rawValue)
+                ?? "unlisted → \(settings.unknownNetworkPolicy.rawValue)"
+            print("  \(identity.displayName(labels: settings.networkLabels))  [\(policy)]")
+            print("  name: \(identity.ssid ?? "not readable without Location access")")
+            print("  router: \(identity.routerMAC ?? "unknown")")
+            print("  matches list entries: \(identity.keys.joined(separator: ", "))")
         case .noWiFi:
-            print("  No Wi-Fi → \(settings.unknownNetworkPolicy.rawValue)")
+            print("  No network → \(settings.unknownNetworkPolicy.rawValue)")
         case .unavailable:
-            print("  Associated, but the network name isn't readable")
+            print("  On a network, but nothing identifies it")
         }
-        print("  Location authorization: \(places.needsLocationPermission ? "missing" : "granted")")
+        print("  Location authorization: \(places.authorizationDescription)")
 
         print("\nOutput devices")
         let defaultDevice = AudioController.defaultOutputDevice()

@@ -6,13 +6,13 @@ public enum Reason: Equatable, Sendable {
     case setupIncomplete
     case overrideUntil(Date)
     case overrideIndefinite
-    case overrideUntilNetworkChange(ssid: String)
+    case overrideUntilNetworkChange(network: String)
     case placeUnavailable
     case noOutputDevice
     case outputIsPrivate(device: String)
-    case ssidAllowListed(String)
-    case ssidMuteListed(String)
-    case ssidUnlisted(String)
+    case networkAllowListed(String)
+    case networkMuteListed(String)
+    case networkUnlisted(String)
     case noWiFi
 }
 
@@ -102,7 +102,8 @@ public enum PolicyEngine {
             switch override {
             case .until(let date): reason = .overrideUntil(date)
             case .indefinite: reason = .overrideIndefinite
-            case .untilNetworkChange(let ssid): reason = .overrideUntilNetworkChange(ssid: ssid)
+            case .untilNetworkChange(let key):
+                reason = .overrideUntilNetworkChange(network: NetworkIdentity.describe(key: key, labels: settings.networkLabels))
             case .none: reason = .paused
             }
             return PolicyResult(decision: .allow, enforcing: false, reason: reason)
@@ -132,17 +133,18 @@ public enum PolicyEngine {
 
         // 6. The place decides. Deny wins.
         switch place {
-        case .wifi(let ssid):
-            switch settings.policy(forSSID: ssid) {
+        case .network(let identity):
+            let name = identity.displayName(labels: settings.networkLabels)
+            switch settings.policy(for: identity) {
             case .mute:
-                return PolicyResult(decision: .mute, enforcing: true, reason: .ssidMuteListed(ssid), outputClass: outputClass)
+                return PolicyResult(decision: .mute, enforcing: true, reason: .networkMuteListed(name), outputClass: outputClass)
             case .allow:
-                return PolicyResult(decision: .allow, enforcing: true, reason: .ssidAllowListed(ssid), outputClass: outputClass)
+                return PolicyResult(decision: .allow, enforcing: true, reason: .networkAllowListed(name), outputClass: outputClass)
             case nil:
                 return PolicyResult(
                     decision: settings.unknownNetworkPolicy == .mute ? .mute : .allow,
                     enforcing: true,
-                    reason: .ssidUnlisted(ssid),
+                    reason: .networkUnlisted(name),
                     outputClass: outputClass
                 )
             }
@@ -173,22 +175,22 @@ extension Reason {
             return "Sound allowed until \(Reason.timeFormatter.string(from: date))"
         case .overrideIndefinite:
             return "Sound allowed until you switch Mutify back on"
-        case .overrideUntilNetworkChange(let ssid):
-            return "Sound allowed while you're on “\(ssid)”"
+        case .overrideUntilNetworkChange(let network):
+            return "Sound allowed while you're on “\(network)”"
         case .placeUnavailable:
             return "Standing down — can't tell which network you're on"
         case .noOutputDevice:
             return "Standing down — no audio output device"
         case .outputIsPrivate(let device):
             return "Sound allowed — \(device) is private"
-        case .ssidAllowListed(let ssid):
-            return "Sound allowed — “\(ssid)” is on your allow list"
-        case .ssidMuteListed(let ssid):
-            return "Muted — “\(ssid)” is on your mute list"
-        case .ssidUnlisted(let ssid):
+        case .networkAllowListed(let network):
+            return "Sound allowed — “\(network)” is on your allow list"
+        case .networkMuteListed(let network):
+            return "Muted — “\(network)” is on your mute list"
+        case .networkUnlisted(let network):
             return decision == .mute
-                ? "Muted — “\(ssid)” isn't on your allow list"
-                : "Sound allowed — “\(ssid)” isn't on your mute list"
+                ? "Muted — “\(network)” isn't on your allow list"
+                : "Sound allowed — “\(network)” isn't on your mute list"
         case .noWiFi:
             return decision == .mute
                 ? "Muted — not on a known Wi-Fi network"
@@ -203,13 +205,13 @@ extension Reason {
         case .setupIncomplete: return "setup not finished"
         case .overrideUntil(let date): return "override until \(Reason.timeFormatter.string(from: date))"
         case .overrideIndefinite: return "override, indefinite"
-        case .overrideUntilNetworkChange(let ssid): return "override while on \(ssid)"
+        case .overrideUntilNetworkChange(let network): return "override while on \(network)"
         case .placeUnavailable: return "network unknown"
         case .noOutputDevice: return "no output device"
         case .outputIsPrivate(let device): return "\(device) is private"
-        case .ssidAllowListed(let ssid): return "\(ssid) allow-listed"
-        case .ssidMuteListed(let ssid): return "\(ssid) mute-listed"
-        case .ssidUnlisted(let ssid): return "\(ssid) unlisted"
+        case .networkAllowListed(let network): return "\(network) allow-listed"
+        case .networkMuteListed(let network): return "\(network) mute-listed"
+        case .networkUnlisted(let network): return "\(network) unlisted"
         case .noWiFi: return "no Wi-Fi"
         }
     }

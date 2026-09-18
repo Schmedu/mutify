@@ -176,13 +176,19 @@ private struct LocationPermissionRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label("Location access isn't granted", systemImage: "location.slash")
+            Label("Mutify needs Location access to work", systemImage: "location.slash")
                 .fontWeight(.medium)
-            Text("macOS only hands out the Wi-Fi network name to apps with Location access. Mutify falls back to a system command that still reports it, so it keeps working either way — but granting access is the supported path and is needed for places later.")
+            Text("macOS won't tell any app the name of the Wi-Fi network without it — it answers “<redacted>” instead. Until you grant access Mutify can't tell one network from another, so it stands down and mutes nothing. Your location never leaves this Mac; Mutify only ever reads the network name.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("Status: \(state.locationStatusDescription)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             HStack {
-                Button("Ask me now") { state.requestLocationPermission() }
+                if state.canPromptForLocation {
+                    Button("Ask me now") { state.requestLocationPermission() }
+                        .buttonStyle(.borderedProminent)
+                }
                 Button("Open System Settings") { state.openLocationSettings() }
             }
         }
@@ -195,29 +201,41 @@ private struct NetworksTab: View {
     @Bindable var state: AppState
     @State private var newAllow = ""
     @State private var newMute = ""
+    @State private var networkLabel = ""
 
     var body: some View {
         Form {
             Section("Current network") {
-                if let ssid = state.place.ssid {
-                    LabeledContent(ssid) {
+                if let identity = state.place.identity {
+                    LabeledContent(identity.displayName(labels: state.settings.networkLabels)) {
                         HStack {
-                            Button("Allow here") { state.settings.add(ssid, to: .allow) }
-                                .disabled(state.settings.policy(forSSID: ssid) == .allow)
-                            Button("Mute here") { state.settings.add(ssid, to: .mute) }
-                                .disabled(state.settings.policy(forSSID: ssid) == .mute)
+                            Button("Allow here") { state.addCurrentNetwork(to: .allow) }
+                                .disabled(state.currentNetworkPolicy == .allow)
+                            Button("Mute here") { state.addCurrentNetwork(to: .mute) }
+                                .disabled(state.currentNetworkPolicy == .mute)
                         }
+                    }
+                    if identity.ssid == nil {
+                        HStack {
+                            TextField("Give this network a name", text: $networkLabel)
+                                .onSubmit { state.labelCurrentNetwork(networkLabel) }
+                            Button("Save") { state.labelCurrentNetwork(networkLabel) }
+                                .disabled(networkLabel.trimmingCharacters(in: .whitespaces).isEmpty)
+                        }
+                        Text("macOS won't reveal the Wi-Fi name without Location access, so Mutify recognises this network by its router instead. The name is just for you.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 } else {
                     Text(state.place == .unavailable
-                         ? "Can't read the network name right now."
-                         : "Not on Wi-Fi.")
+                         ? "On a network, but nothing identifies it yet."
+                         : "Not connected to a network.")
                         .foregroundStyle(.secondary)
                 }
             }
 
             Section("Allow list — sound may play here") {
-                SSIDList(entries: state.settings.allowList) { state.settings.remove($0) }
+                SSIDList(entries: state.settings.allowList, labels: state.settings.networkLabels) { state.settings.remove($0) }
                 AddField(text: $newAllow, placeholder: "Network name") {
                     state.settings.add(newAllow, to: .allow)
                     newAllow = ""
@@ -225,7 +243,7 @@ private struct NetworksTab: View {
             }
 
             Section("Mute list — always muted here") {
-                SSIDList(entries: state.settings.muteList) { state.settings.remove($0) }
+                SSIDList(entries: state.settings.muteList, labels: state.settings.networkLabels) { state.settings.remove($0) }
                 AddField(text: $newMute, placeholder: "Network name") {
                     state.settings.add(newMute, to: .mute)
                     newMute = ""
@@ -238,7 +256,7 @@ private struct NetworksTab: View {
             if !unlistedSeen.isEmpty {
                 Section("Networks you've been on") {
                     ForEach(unlistedSeen, id: \.self) { ssid in
-                        LabeledContent(ssid) {
+                        LabeledContent(NetworkIdentity.describe(key: ssid, labels: state.settings.networkLabels)) {
                             HStack {
                                 Button("Allow") { state.settings.add(ssid, to: .allow) }
                                 Button("Mute") { state.settings.add(ssid, to: .mute) }
@@ -253,13 +271,14 @@ private struct NetworksTab: View {
 
     private var unlistedSeen: [String] {
         state.settings.seenNetworks
-            .filter { state.settings.policy(forSSID: $0) == nil }
+            .filter { state.settings.policy(forKeys: [$0]) == nil }
             .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
     }
 }
 
 private struct SSIDList: View {
     let entries: [String]
+    var labels: [String: String] = [:]
     let remove: (String) -> Void
 
     var body: some View {
@@ -268,7 +287,7 @@ private struct SSIDList: View {
         } else {
             ForEach(entries, id: \.self) { ssid in
                 HStack {
-                    Text(ssid)
+                    Text(NetworkIdentity.describe(key: ssid, labels: labels))
                     Spacer()
                     Button {
                         remove(ssid)

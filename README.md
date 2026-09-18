@@ -16,10 +16,10 @@ mute  ⟺  set up and not paused
 
 | Situation | Result |
 |---|---|
-| SSID on the **mute list** | muted (deny wins over the allow list) |
-| SSID on the **allow list** | sound allowed |
-| SSID on neither, or no Wi-Fi at all | your "unknown networks" setting — muted by default |
-| Network name unreadable | stands down, with a warning — never mutes on a guess |
+| Network on the **mute list** | muted (deny wins over the allow list) |
+| Network on the **allow list** | sound allowed |
+| Network on neither, or no network at all | your "unknown networks" setting — muted by default |
+| Nothing identifies the network | stands down, with a warning — never mutes on a guess |
 | AirPods, headset, headphones in the jack | left alone, wherever you are |
 | Built-in speakers, a monitor over HDMI | treated as room-audible |
 | Virtual/USB devices | classified by you on the **Devices** tab |
@@ -52,12 +52,26 @@ brings up its window**, and every control from the menu is also in that window,
 so the app stays fully usable either way. To get the icon back, quit a menu bar
 app or install a menu bar manager such as Ice.
 
-## Location permission
+## How Mutify tells networks apart
 
-Since macOS 14, an app needs Location Services access to read the Wi-Fi network
-name. Mutify asks for it, and also falls back to `ipconfig getsummary`, which
-still reports the name — so it works whether you grant it or not. Nothing about
-your location or your networks ever leaves the machine.
+The obvious answer is the Wi-Fi name, and macOS won't give it up. Since macOS 14
+an app without Location Services access doesn't get an error when it asks — it
+gets the literal string `<redacted>`, from CoreWLAN, from `ipconfig getsummary`
+and from `system_profiler` alike. Treating that as a network name would be
+worse than useless: allow-listing it would allow-list every network whose name
+can't be read.
+
+So Mutify identifies a network by **its router's hardware address**, which needs
+no permission at all and is the better identifier anyway — two cafés both called
+"FRITZ!Box" are two different networks, and this tells them apart. Networks
+identified this way show up as *"Unnamed network (router …2b:3c)"*, and you can
+give them a name of your own on the Networks tab.
+
+Granting Location access is still worth it: the real Wi-Fi name then appears
+instead. A network is matched by **either** identifier, so entries added before
+the grant keep working after it.
+
+Nothing about your location or your networks ever leaves the machine.
 
 ## Diagnostics
 
@@ -69,6 +83,7 @@ Mutify would make right now.
 
 ```sh
 … --probe-as "MacBook Pro Speakers"   # what happens when my AirPods die?
+… --ask-location                       # trigger the Location permission prompt
 … --probe-write "MacBook Pro Speakers" # can this device be muted and restored?
 MUTIFY_DEBUG_STATUS=1 …                # where the menu bar icon was placed
 ```

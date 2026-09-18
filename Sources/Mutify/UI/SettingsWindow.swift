@@ -7,6 +7,7 @@ import SwiftUI
 @MainActor
 enum SettingsWindow {
     private static var controller: NSWindowController?
+    private static let delegate = WindowDelegate()
 
     static func show() {
         guard let state = AppEnvironment.state else { return }
@@ -17,15 +18,30 @@ enum SettingsWindow {
             window.title = "Mutify"
             window.styleMask = [.titled, .closable, .miniaturizable]
             window.isReleasedWhenClosed = false
+            window.delegate = delegate
             window.setContentSize(NSSize(width: 620, height: 520))
             window.center()
             controller = NSWindowController(window: window)
         }
 
+        // An accessory app can't pull itself to the front on macOS 14+, and a
+        // window nobody can see is no use — least of all when it's the one
+        // asking for the permission the app needs. Becoming a regular app for
+        // as long as the window is open is the supported way through.
+        NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
-        controller?.window?.center()
         controller?.showWindow(nil)
         controller?.window?.makeKeyAndOrderFront(nil)
+        controller?.window?.orderFrontRegardless()
+    }
+}
+
+private final class WindowDelegate: NSObject, NSWindowDelegate {
+    nonisolated func windowWillClose(_ notification: Notification) {
+        MainActor.assumeIsolated {
+            // Back to living in the menu bar only.
+            NSApp.setActivationPolicy(.accessory)
+        }
     }
 }
 

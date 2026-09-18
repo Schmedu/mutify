@@ -53,6 +53,7 @@ final class AppState {
     // MARK: - Lifecycle
 
     func start() {
+        places.refreshAuthorizationStatus()
         audio.onEvent = { [weak self] trigger in self?.schedule(trigger) }
         places.onEvent = { [weak self] trigger in self?.schedule(trigger) }
         triggers.onEvent = { [weak self] trigger in
@@ -101,8 +102,8 @@ final class AppState {
 
         // Note what we've seen, without writing when nothing actually changed —
         // a no-op write would bounce straight back in here as a settings change.
-        if let ssid = newPlace.ssid, !Settings.list(settings.seenNetworks, contains: ssid) {
-            settings.noteSeen(ssid: ssid)
+        if let identity = newPlace.identity, settings.isUnseen(identity) {
+            settings.noteSeen(network: identity)
         }
         if let device = newOutput, settings.seenDevices[device.uid] != device.name {
             settings.noteSeen(device: device)
@@ -275,8 +276,28 @@ final class AppState {
     }
 
     func addCurrentNetwork(to policy: PlacePolicy) {
-        guard let ssid = place.ssid else { return }
-        settings.add(ssid, to: policy)
+        guard let identity = place.identity else { return }
+        settings.add(identity, to: policy)
+    }
+
+    /// Gives the current network a name of its own — the only way to tell
+    /// router-identified networks apart in the lists.
+    func labelCurrentNetwork(_ label: String) {
+        guard let key = place.identity?.primaryKey else { return }
+        let trimmed = label.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            settings.networkLabels.removeValue(forKey: key)
+        } else {
+            settings.networkLabels[key] = trimmed
+        }
+    }
+
+    var currentNetworkName: String? {
+        place.identity?.displayName(labels: settings.networkLabels)
+    }
+
+    var currentNetworkPolicy: PlacePolicy? {
+        place.identity.flatMap { settings.policy(for: $0) }
     }
 
     func setLoginItem(_ enabled: Bool) {
@@ -286,6 +307,10 @@ final class AppState {
     func requestLocationPermission() {
         places.requestLocationPermission()
     }
+
+    var locationStatusDescription: String { places.authorizationDescription }
+
+    var canPromptForLocation: Bool { places.canPrompt }
 
     func openLocationSettings() {
         places.openLocationSettings()
@@ -310,7 +335,7 @@ final class AppState {
             ActivityEntry(
                 trigger: trigger,
                 action: action,
-                ssid: place.ssid,
+                ssid: currentNetworkName,
                 device: output?.name,
                 detail: detail
             )
@@ -366,8 +391,8 @@ final class AppState {
 
 extension AppState {
     var headline: String {
-        if locationPermissionMissing, place == .unavailable {
-            return "Standing down — Mutify can't see your network"
+        if place == .unavailable {
+            return "Standing down — can't identify this network"
         }
         return result.reason.headline(decision: result.decision)
     }
@@ -375,9 +400,10 @@ extension AppState {
     var subline: String {
         var parts: [String] = []
         switch place {
-        case .wifi(let ssid): parts.append("Wi-Fi: \(ssid)")
-        case .noWiFi: parts.append("No Wi-Fi")
-        case .unavailable: parts.append("Wi-Fi: unknown")
+        case .network(let identity):
+            parts.append("Network: \(identity.displayName(labels: settings.networkLabels))")
+        case .noWiFi: parts.append("No network")
+        case .unavailable: parts.append("Network: unidentifiable")
         }
         if let output {
             let classification = PolicyEngine.resolvedClass(output, settings: settings)
@@ -397,6 +423,10 @@ extension AppState {
     var isOverrideActive: Bool { override != .none }
 
     var needsSetup: Bool { !settings.hasCompletedOnboarding }
+
+    /// True only before Mutify has ever been configured — not merely when
+    /// something is missing.
+    var isFirstRun: Bool { !settings.hasCompletedOnboarding && settings.seenDevices.isEmpty }
 
     var overrideDescription: String? {
         switch override {
