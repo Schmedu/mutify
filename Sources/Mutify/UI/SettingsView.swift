@@ -18,7 +18,10 @@ struct SettingsView: View {
             AboutTab()
                 .tabItem { Label("About", systemImage: "info.circle") }
         }
-        .frame(width: 620, height: 520)
+        // Breathing room between the title bar and the tab strip, which SwiftUI
+        // otherwise crowds right up against it.
+        .padding(.top, 12)
+        .frame(width: 620, height: 560)
     }
 }
 

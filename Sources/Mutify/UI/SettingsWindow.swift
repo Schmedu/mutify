@@ -19,7 +19,7 @@ enum SettingsWindow {
             window.styleMask = [.titled, .closable, .miniaturizable]
             window.isReleasedWhenClosed = false
             window.delegate = delegate
-            window.setContentSize(NSSize(width: 620, height: 520))
+            window.setContentSize(NSSize(width: 620, height: 560))
             window.center()
             controller = NSWindowController(window: window)
         }
