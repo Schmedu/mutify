@@ -320,6 +320,8 @@ final class AppState {
     /// True when macOS took the request but showed nothing.
     var locationPromptSeemsStuck: Bool { places.promptSeemsStuck }
 
+    func clearStuckLocationPrompt() { places.clearStuckPromptAndRetry() }
+
     func openLocationSettings() {
         places.openLocationSettings()
     }

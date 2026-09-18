@@ -185,9 +185,10 @@ private struct LocationPermissionRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             if state.locationPromptSeemsStuck {
-                Text("macOS took the request but didn't show a dialog. That happens when an earlier permission prompt is still open somewhere — check your other display, or run “killall UserNotificationCenter CoreLocationAgent” in Terminal, then try again.")
+                Text("macOS took the request but showed no dialog, and clearing the parked one didn't help either. An earlier prompt may be open on another display — or grant access directly in System Settings.")
                     .font(.caption)
                     .foregroundStyle(.orange)
+                Button("Clear stuck dialog and try again") { state.clearStuckLocationPrompt() }
             }
             HStack {
                 if state.canPromptForLocation {

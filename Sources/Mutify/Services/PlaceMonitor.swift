@@ -31,6 +31,8 @@ final class PlaceMonitor: NSObject {
     private var pathHasNetwork = false
     private var locationBurstTask: Task<Void, Never>?
     private var activationObserver: NSObjectProtocol?
+    private var hasRetriedAfterStuckPrompt = false
+    private var lastRequestAt: Date = .distantPast
 
     private(set) var authorizationStatus: CLAuthorizationStatus = .notDetermined
     /// Set when macOS refuses a request without showing anything, which happens
@@ -203,6 +205,7 @@ final class PlaceMonitor: NSObject {
     /// macOS silently drops the prompt otherwise, which looks exactly like the
     /// request never happening.
     func requestLocationPermission() {
+        hasRetriedAfterStuckPrompt = false
         guard canPrompt else {
             // Already answered once: only System Settings can change it now.
             openLocationSettings()
@@ -241,7 +244,32 @@ final class PlaceMonitor: NSObject {
         }
     }
 
-    private func performLocationRequest() {
+    /// Restarts the agents that draw permission dialogs, then asks again.
+    ///
+    /// macOS allows one outstanding prompt per app, and a prompt that was
+    /// created while the app wasn't frontmost can end up parked off-screen where
+    /// it can never be answered — after which every request is refused
+    /// instantly. Both agents relaunch on demand, so this is safe; the cost is
+    /// that any notification banner currently on screen is dismissed.
+    func clearStuckPromptAndRetry() {
+        Self.trace("clearing stuck prompt agents")
+        _ = Self.run("/usr/bin/killall", ["UserNotificationCenter"])
+        _ = Self.run("/usr/bin/killall", ["CoreLocationAgent"])
+        promptSeemsStuck = false
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(1.5))
+            self?.performLocationRequest(force: true)
+        }
+    }
+
+    private func performLocationRequest(force: Bool = false) {
+        // One ask at a time. Repeated calls don't produce repeated dialogs, they
+        // just produce repeated refusals.
+        guard force || Date().timeIntervalSince(lastRequestAt) > 5 else {
+            Self.trace("request throttled")
+            return
+        }
+        lastRequestAt = Date()
         promptSeemsStuck = false
         Self.trace("requesting: status=\(locationManager.authorizationStatus.rawValue) servicesEnabled=\(CLLocationManager.locationServicesEnabled()) active=\(NSApp.isActive)")
         locationManager.requestAlwaysAuthorization()
@@ -323,7 +351,15 @@ extension PlaceMonitor: CLLocationManagerDelegate {
         guard nsError.domain == kCLErrorDomain, nsError.code == CLError.denied.rawValue else { return }
         Task { @MainActor [weak self] in
             guard let self, self.authorizationStatus == .notDetermined else { return }
-            self.promptSeemsStuck = true
+            // First time this happens, clear the parked dialog and ask once
+            // more — that is nearly always all it takes, and a button that
+            // silently does nothing is worse than one that fixes itself.
+            if !self.hasRetriedAfterStuckPrompt {
+                self.hasRetriedAfterStuckPrompt = true
+                self.clearStuckPromptAndRetry()
+            } else {
+                self.promptSeemsStuck = true
+            }
         }
     }
 
