@@ -13,13 +13,21 @@ enum SettingsWindow {
         guard let state = AppEnvironment.state else { return }
 
         if controller == nil {
-            let hosting = NSHostingController(rootView: SettingsView(state: state))
-            let window = NSWindow(contentViewController: hosting)
+            let tabs = NSTabViewController()
+            tabs.tabStyle = .toolbar
+            for pane in SettingsPane.allCases {
+                let item = NSTabViewItem(viewController: pane.controller(state: state))
+                item.label = pane.title
+                item.image = NSImage(systemSymbolName: pane.symbol, accessibilityDescription: nil)
+                tabs.addTabViewItem(item)
+            }
+
+            let window = NSWindow(contentViewController: tabs)
             window.title = "Mutify"
             window.styleMask = [.titled, .closable, .miniaturizable]
             window.isReleasedWhenClosed = false
             window.delegate = delegate
-            window.setContentSize(NSSize(width: 620, height: 560))
+            window.setContentSize(SettingsPane.contentSize)
             window.center()
             controller = NSWindowController(window: window)
         }

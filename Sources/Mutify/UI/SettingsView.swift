@@ -2,26 +2,58 @@ import AppKit
 import MutifyCore
 import SwiftUI
 
-struct SettingsView: View {
-    @Bindable var state: AppState
+/// The panes of the settings window, in the order the toolbar shows them.
+///
+/// The window puts these in an `NSTabViewController` rather than a SwiftUI
+/// `TabView`: SwiftUI's macOS tab strip draws its selection capsule a couple of
+/// points off from the segment underneath it, which leaves a grey sliver poking
+/// out from behind the selected tab. A toolbar is also simply the Mac way to
+/// move between settings panes.
+@MainActor
+enum SettingsPane: CaseIterable {
+    case general, networks, devices, activity, about
 
-    var body: some View {
-        TabView {
-            GeneralTab(state: state)
-                .tabItem { Label("General", systemImage: "gearshape") }
-            NetworksTab(state: state)
-                .tabItem { Label("Networks", systemImage: "wifi") }
-            DevicesTab(state: state)
-                .tabItem { Label("Devices", systemImage: "hifispeaker") }
-            ActivityTab(state: state)
-                .tabItem { Label("Activity", systemImage: "list.bullet.rectangle") }
-            AboutTab()
-                .tabItem { Label("About", systemImage: "info.circle") }
+    /// Every pane is the same size, so switching panes doesn't resize the window.
+    static let contentSize = NSSize(width: 620, height: 560)
+
+    var title: String {
+        switch self {
+        case .general: "General"
+        case .networks: "Networks"
+        case .devices: "Devices"
+        case .activity: "Activity"
+        case .about: "About"
         }
-        // Breathing room between the title bar and the tab strip, which SwiftUI
-        // otherwise crowds right up against it.
-        .padding(.top, 12)
-        .frame(width: 620, height: 560)
+    }
+
+    var symbol: String {
+        switch self {
+        case .general: "gearshape"
+        case .networks: "wifi"
+        case .devices: "hifispeaker"
+        case .activity: "list.bullet.rectangle"
+        case .about: "info.circle"
+        }
+    }
+
+    func controller(state: AppState) -> NSViewController {
+        let hosting = NSHostingController(rootView: content(state: state))
+        hosting.title = title
+        return hosting
+    }
+
+    @ViewBuilder
+    private func content(state: AppState) -> some View {
+        Group {
+            switch self {
+            case .general: GeneralTab(state: state)
+            case .networks: NetworksTab(state: state)
+            case .devices: DevicesTab(state: state)
+            case .activity: ActivityTab(state: state)
+            case .about: AboutTab()
+            }
+        }
+        .frame(width: Self.contentSize.width, height: Self.contentSize.height)
     }
 }
 
