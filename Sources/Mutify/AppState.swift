@@ -292,6 +292,11 @@ final class AppState {
         }
     }
 
+    /// Saved Wi-Fi names, for naming a network macOS won't name for us.
+    func knownNetworkNames() -> [String] {
+        PlaceMonitor.preferredNetworkNames()
+    }
+
     var currentNetworkName: String? {
         place.identity?.displayName(labels: settings.networkLabels)
     }
@@ -319,12 +324,14 @@ final class AppState {
         places.openLocationSettings()
     }
 
+    /// Mutes the current output on request.
+    ///
+    /// Deliberately records nothing to restore later: a mute the user asked for
+    /// is theirs to undo. Recording it would leave headphones — which Mutify
+    /// never mutes on its own, and so has no natural moment to unmute — holding
+    /// a volume that only comes back by accident.
     func muteNow() {
-        guard let device = output else { return }
-        let volume = audio.currentVolume ?? 0
-        if volume > 0.0001 {
-            muteRecords[device.uid] = MuteRecord(deviceUID: device.uid, previousVolume: volume, at: Date())
-        }
+        guard output != nil else { return }
         audio.silence()
         currentVolume = audio.currentVolume
         persistState()

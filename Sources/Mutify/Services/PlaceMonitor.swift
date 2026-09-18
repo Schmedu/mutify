@@ -83,6 +83,22 @@ final class PlaceMonitor: NSObject {
         return NetworkName.clean(Self.runIPConfig(interface: interface.interfaceName ?? "en0"))
     }
 
+    /// The Wi-Fi networks this Mac has saved.
+    ///
+    /// `networksetup` still answers this one honestly without Location access —
+    /// it just won't say which of them you're on. Good enough to let someone
+    /// name a network from a list of real names instead of typing it.
+    static func preferredNetworkNames(interface: String = "en0") -> [String] {
+        guard let output = run("/usr/sbin/networksetup", ["-listpreferredwirelessnetworks", interface]) else {
+            return []
+        }
+        return output
+            .split(separator: "\n")
+            .dropFirst()  // "Preferred networks on en0:"
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .compactMap { NetworkName.clean($0) }
+    }
+
     /// The default gateway's hardware address: no permission, no prompt, and it
     /// tells apart two networks that share a name.
     static func defaultGatewayMAC() -> String? {

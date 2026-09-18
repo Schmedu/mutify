@@ -207,6 +207,7 @@ private struct NetworksTab: View {
     @State private var newAllow = ""
     @State private var newMute = ""
     @State private var networkLabel = ""
+    @State private var savedNames: [String] = []
 
     var body: some View {
         Form {
@@ -224,10 +225,21 @@ private struct NetworksTab: View {
                         HStack {
                             TextField("Give this network a name", text: $networkLabel)
                                 .onSubmit { state.labelCurrentNetwork(networkLabel) }
+                            if !savedNames.isEmpty {
+                                Menu("Pick saved") {
+                                    ForEach(savedNames, id: \.self) { name in
+                                        Button(name) {
+                                            networkLabel = name
+                                            state.labelCurrentNetwork(name)
+                                        }
+                                    }
+                                }
+                                .frame(width: 110)
+                            }
                             Button("Save") { state.labelCurrentNetwork(networkLabel) }
                                 .disabled(networkLabel.trimmingCharacters(in: .whitespaces).isEmpty)
                         }
-                        Text("macOS won't reveal the Wi-Fi name without Location access, so Mutify recognises this network by its router instead. The name is just for you.")
+                        Text("macOS won't say which Wi-Fi you're on without Location access, so Mutify recognises this network by its router. It will tell us the networks you've saved, though — pick the right one, or type any name. It's only a label; matching uses the router.")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -272,6 +284,11 @@ private struct NetworksTab: View {
             }
         }
         .formStyle(.grouped)
+        .task {
+            // Shelling out to networksetup takes a moment; do it once, off the
+            // path that draws the window.
+            savedNames = state.knownNetworkNames()
+        }
     }
 
     private var unlistedSeen: [String] {
