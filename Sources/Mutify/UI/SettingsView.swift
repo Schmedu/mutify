@@ -184,6 +184,11 @@ private struct LocationPermissionRow: View {
             Text("Status: \(state.locationStatusDescription)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            if state.locationPromptSeemsStuck {
+                Text("macOS took the request but didn't show a dialog. That happens when an earlier permission prompt is still open somewhere — check your other display, or run “killall UserNotificationCenter CoreLocationAgent” in Terminal, then try again.")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            }
             HStack {
                 if state.canPromptForLocation {
                     Button("Ask me now") { state.requestLocationPermission() }

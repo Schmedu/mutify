@@ -312,6 +312,9 @@ final class AppState {
 
     var canPromptForLocation: Bool { places.canPrompt }
 
+    /// True when macOS took the request but showed nothing.
+    var locationPromptSeemsStuck: Bool { places.promptSeemsStuck }
+
     func openLocationSettings() {
         places.openLocationSettings()
     }

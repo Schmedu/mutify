@@ -33,6 +33,9 @@ final class PlaceMonitor: NSObject {
     private var activationObserver: NSObjectProtocol?
 
     private(set) var authorizationStatus: CLAuthorizationStatus = .notDetermined
+    /// Set when macOS refuses a request without showing anything, which happens
+    /// when an earlier prompt is still outstanding somewhere.
+    private(set) var promptSeemsStuck = false
 
     /// Reads the live status, creating the manager if this is the first ask.
     func refreshAuthorizationStatus() {
@@ -223,6 +226,7 @@ final class PlaceMonitor: NSObject {
     }
 
     private func performLocationRequest() {
+        promptSeemsStuck = false
         Self.trace("requesting: status=\(locationManager.authorizationStatus.rawValue) servicesEnabled=\(CLLocationManager.locationServicesEnabled()) active=\(NSApp.isActive)")
         locationManager.requestAlwaysAuthorization()
         // Asking alone doesn't always surface the prompt for a background-only
@@ -294,7 +298,17 @@ extension PlaceMonitor: CLLocationManagerDelegate {
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        PlaceMonitor.trace("location failed: \(error.localizedDescription) [\((error as NSError).domain) \((error as NSError).code)]")
+        let nsError = error as NSError
+        PlaceMonitor.trace("location failed: \(error.localizedDescription) [\(nsError.domain) \(nsError.code)]")
+        // kCLErrorDenied while the status is still "not determined" means the
+        // request was refused without a dialog — macOS allows only one
+        // outstanding prompt per app, and an earlier one is still pending
+        // somewhere, possibly on another display or off-screen entirely.
+        guard nsError.domain == kCLErrorDomain, nsError.code == CLError.denied.rawValue else { return }
+        Task { @MainActor [weak self] in
+            guard let self, self.authorizationStatus == .notDetermined else { return }
+            self.promptSeemsStuck = true
+        }
     }
 
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
