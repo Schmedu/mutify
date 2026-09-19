@@ -1,4 +1,4 @@
-# mutify.schmedu.com
+# mutify.e.uffelmann.me
 
 The page that sells Mutify, and the two functions that take the money and hand
 over the DMG. Static HTML with no build step and no dependencies — `public/` is
@@ -42,6 +42,21 @@ cached for ten minutes per warm instance, so shipping 1.1 needs no change here.
 If GitHub is unreachable it falls back to the constant in `api/_lib.js`.
 
 The same DMG is a free public download on that release. That is deliberate.
+
+## The hero
+
+`public/img/room.webp` is a generated coworking-space image (`Marketing/07-room.jpg`
+is the full-size original) — not a photograph of anywhere real. The card sitting
+on it is: `public/img/status.webp` is the top two rows cropped straight out of
+`Marketing/screenshots/05-menu.png`, so the words in the hero are the words the
+app actually prints.
+
+## Domains
+
+`mutify.e.uffelmann.me` is the site. `mutify.schmedu.com` was the first home and
+now 308s to it, path and all, so anything already shared keeps working. Both are
+Cloudflare CNAMEs to Vercel, DNS-only, each with its own `_vercel` TXT record —
+note those live in *different zones* (`uffelmann.me` and `schmedu.com`).
 
 ## Deploying
 

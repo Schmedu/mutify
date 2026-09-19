@@ -3,4 +3,4 @@ Allow: /
 Disallow: /api/
 Disallow: /thanks
 
-Sitemap: https://mutify.schmedu.com/sitemap.xml
+Sitemap: https://mutify.e.uffelmann.me/sitemap.xml

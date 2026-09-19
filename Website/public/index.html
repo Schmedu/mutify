@@ -3,14 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mutify — your Mac goes quiet where sound isn't welcome</title>
-<meta name="description" content="A macOS menu bar app that sets the output volume to zero on any Wi-Fi you haven't allowed — and never touches your headphones. €0.99, pay what you like.">
+<title>Mutify — never be the laptop that starts playing</title>
+<meta name="description" content="Open the lid in a coworking space, an office, a lecture hall or a café, and yesterday's playlist fills the room. Mutify takes the volume to zero on any Wi-Fi you haven't vouched for — and never touches your headphones. €0.99, pay what you like.">
 <link rel="icon" href="/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<meta property="og:title" content="Mutify — your Mac goes quiet where sound isn't welcome">
-<meta property="og:description" content="Sets the output volume to zero on any Wi-Fi you haven't allowed. Headphones are never touched. macOS 14+, Apple Silicon.">
-<meta property="og:image" content="https://mutify.schmedu.com/img/icon.png">
-<meta property="og:url" content="https://mutify.schmedu.com/">
+<meta property="og:title" content="Mutify — never be the laptop that starts playing">
+<meta property="og:description" content="You open the lid and yesterday's playlist fills the coworking space. Mutify takes the volume to zero on any Wi-Fi you haven't vouched for. Headphones are never touched. macOS 14+, Apple Silicon.">
+<meta property="og:image" content="https://mutify.e.uffelmann.me/img/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:url" content="https://mutify.e.uffelmann.me/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#f7f6fb" media="(prefers-color-scheme: light)">
@@ -79,7 +81,7 @@ body{
 }
 
 h1,h2,h3{ font-family:var(--display); font-weight:380; line-height:1.04; letter-spacing:-.018em; margin:0; }
-h1{ font-size:clamp(2.6rem, 1.5rem + 4.6vw, 5rem); text-wrap:balance; max-width:13ch; }
+h1{ font-size:clamp(2.35rem, 1.5rem + 3.6vw, 4.25rem); text-wrap:balance; max-width:17ch; }
 h2{ font-size:clamp(2rem, 1.2rem + 3.2vw, 3.5rem); }
 h3{ font-size:clamp(1.25rem, 1.1rem + .6vw, 1.5rem); font-weight:420; letter-spacing:-.012em; }
 p{ margin:0; }
@@ -139,7 +141,7 @@ header.scrolled{ border-bottom-color:var(--rule); }
 /* ── hero ─────────────────────────────────────────────────────────────── */
 .hero{ padding:clamp(3rem,7vw,6.5rem) 0 clamp(2.5rem,5vw,4rem); }
 .hero-grid{ display:grid; gap:clamp(2.5rem,5vw,4rem); align-items:center; }
-@media (min-width:60rem){ .hero-grid{ grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr); } }
+@media (min-width:60rem){ .hero-grid{ grid-template-columns:minmax(0,1fr) minmax(0,1fr); } }
 
 h1 .quiet-word{ font-style:italic; color:var(--indigo); }
 
@@ -153,15 +155,51 @@ h1 .quiet-word{ font-style:italic; color:var(--indigo); }
 
 .shot-float{ position:relative; }
 .shot-stage{
-  border-radius:1.5rem; padding:clamp(1.5rem,3.5vw,2.75rem);
-  background:
-    radial-gradient(120% 130% at 12% -10%, oklch(66% .16 268 / .95), transparent 62%),
-    linear-gradient(155deg, oklch(54% .185 272), oklch(45% .20 306));
-  box-shadow:0 34px 70px -28px oklch(35% .12 290 / .55);
+  position:relative; border-radius:1.5rem; overflow:clip;
+  aspect-ratio:5/4; display:grid; place-items:end start;
+  padding:clamp(.9rem,2.4vw,1.4rem);
+  background-image:
+    linear-gradient(20deg, oklch(13% .05 272 / .72) 0%, oklch(15% .05 270 / .28) 34%, transparent 58%),
+    linear-gradient(195deg, oklch(20% .04 265 / .38) 0%, oklch(18% .05 268 / .10) 42%, transparent 70%),
+    url('/img/room.webp');
+  background-size:cover; background-position:42% 46%;
+  box-shadow:0 34px 70px -30px oklch(30% .08 280 / .5);
 }
-.shot-stage img{ width:100%; height:auto; display:block; border-radius:.75rem;
-  filter:drop-shadow(0 20px 40px oklch(22% .09 292 / .5)); }
+.shot-stage img{ width:min(100%, 24rem); height:auto; display:block;
+  filter:drop-shadow(0 14px 30px oklch(8% .05 280 / .7)); }
 .shot-float figcaption{ margin-top:1.1rem; font-size:.8125rem; color:var(--ink-3); line-height:1.5; max-width:38ch; }
+
+/* ── the four rooms ───────────────────────────────────────────────────── */
+.rooms{ padding:clamp(3.5rem,7vw,6rem) 0; border-top:1px solid var(--rule); }
+.rooms-head h2{ margin-top:1.75rem; max-width:15ch; text-wrap:balance; }
+.scenes{
+  margin:clamp(2.5rem,5vw,3.75rem) 0 0; padding:0; list-style:none;
+  display:grid; gap:0;
+}
+@media (min-width:54rem){ .scenes{ grid-template-columns:1fr 1fr; column-gap:clamp(2.5rem,5vw,5rem); } }
+.scenes li{
+  border-top:1px solid var(--rule); padding:clamp(1.5rem,2.6vw,2rem) 0;
+  display:grid; gap:.7rem; align-content:start;
+}
+.scene-where{
+  font-family:var(--display); font-size:1.25rem; font-weight:440;
+  letter-spacing:-.012em; line-height:1.2;
+}
+.scene-where::before{
+  content:counter(scene,decimal-leading-zero); counter-increment:scene;
+  font-family:var(--body); font-size:.6875rem; font-weight:600; letter-spacing:.14em;
+  color:var(--ink-3); margin-right:.85rem; vertical-align:.22em;
+}
+.scenes{ counter-reset:scene; }
+.scene-what{ color:var(--ink-2); max-width:44ch; }
+.rooms-close{
+  margin-top:clamp(2.5rem,5vw,3.5rem); padding-top:clamp(1.75rem,3vw,2.25rem);
+  border-top:1px solid var(--rule);
+  display:grid; gap:1rem; max-width:52ch;
+}
+.rooms-close p:first-child{ font-family:var(--display); font-size:clamp(1.35rem,1.1rem + 1.1vw,1.85rem);
+  font-weight:360; line-height:1.25; letter-spacing:-.014em; color:var(--ink); }
+.rooms-close p:last-child{ color:var(--ink-2); }
 
 /* ── the decision ─────────────────────────────────────────────────────── */
 .decide{ padding:clamp(3.5rem,7vw,6rem) 0; border-top:1px solid var(--rule); }
@@ -295,11 +333,14 @@ footer a:hover{ text-decoration:underline; color:var(--ink); }
 
 /* ── entrance, once, quietly ──────────────────────────────────────────── */
 @media (prefers-reduced-motion:no-preference){
-  .rise{ opacity:0; transform:translateY(14px); }
-  .rise.in{ opacity:1; transform:none; transition:opacity .7s var(--ease), transform .7s var(--ease); }
+  /* Only hide what JS is going to bring back — a blocked script must not
+     leave the page blank. The .js class is set inline, before first paint. */
+  .js .rise{ opacity:0; transform:translateY(14px); }
+  .js .rise.in{ opacity:1; transform:none; transition:opacity .55s var(--ease), transform .55s var(--ease); }
 }
 </style>
 </head>
+<script>document.documentElement.classList.add('js');</script>
 <body>
 
 <header>
@@ -318,8 +359,8 @@ footer a:hover{ text-decoration:underline; color:var(--ink); }
 <section class="hero">
   <div class="wrap hero-grid">
     <div>
-      <h1 class="rise">Your Mac goes <em class="quiet-word">quiet</em> where sound isn't welcome.</h1>
-      <p class="lede rise">Mutify sets the output volume to zero on any Wi-Fi you haven't allowed — and puts it back when you're home.</p>
+      <h1 class="rise">You open the lid. Yesterday's playlist <em class="quiet-word">fills the room.</em></h1>
+      <p class="lede rise">It only has to happen once. Mutify takes the volume to zero on any Wi-Fi you haven't vouched for — and never touches your headphones.</p>
       <div class="cta-row rise">
         <a class="btn btn-accent" href="#buy">Get Mutify — €0.99</a>
         <a class="btn btn-quiet" href="#decide">See how it decides</a>
@@ -328,9 +369,42 @@ footer a:hover{ text-decoration:underline; color:var(--ink); }
     </div>
 
     <figure class="shot-float rise">
-      <div class="shot-stage"><img src="/img/menu.webp" alt="Mutify's menu bar menu, reading “Muted — Café Kollektiv isn't on your allow list”, above options to allow sound for 15 minutes, 30 minutes, an hour, until tomorrow morning, or until you leave this network." width="978" height="710" fetchpriority="high"></div>
-      <figcaption>The whole app, most days: what it's doing, why, and five ways out of it.</figcaption>
+      <div class="shot-stage"><img src="/img/status.webp" alt="Mutify's status, reading “Muted — Café Kollektiv isn't on your allow list”, with the line “Network: Café Kollektiv · Output: MacBook Pro Speakers (speakers)” beneath it." width="978" height="118" fetchpriority="high"></div>
+      <figcaption>A shared desk, a network it doesn't know, speakers the room can hear. Mutify took the volume to zero on the way in — and said exactly why.</figcaption>
     </figure>
+  </div>
+</section>
+
+<section class="rooms">
+  <div class="wrap">
+    <div class="rooms-head">
+      <p class="eyebrow rise">Where it bites</p>
+      <h2 class="rise">Every room has a volume nobody agreed on out loud.</h2>
+    </div>
+
+    <ol class="scenes">
+      <li class="rise">
+        <p class="scene-where">The coworking space</p>
+        <p class="scene-what">You open the lid to check one thing, and the trailer you left paused on the train plays to eleven strangers in a room with no walls.</p>
+      </li>
+      <li class="rise">
+        <p class="scene-where">The open-plan office</p>
+        <p class="scene-what">Stand-up has started. Your Mac wakes onto the meeting-room display, and a display over HDMI is a speaker like any other.</p>
+      </li>
+      <li class="rise">
+        <p class="scene-where">The lecture hall</p>
+        <p class="scene-what">Two hundred people, one notification, and every one of them now knows whose laptop it was.</p>
+      </li>
+      <li class="rise">
+        <p class="scene-where">The café on Thursdays</p>
+        <p class="scene-what">Not silent, but not yours either — and the table beside you has been on a call for twenty minutes.</p>
+      </li>
+    </ol>
+
+    <div class="rooms-close">
+      <p class="rise">None of it is the volume slider's fault. You set that at home, where it was exactly right.</p>
+      <p class="rise">Mutify makes the call you would have made, a second before you would have made it — and puts the volume back when you're somewhere it's welcome again.</p>
+    </div>
   </div>
 </section>
 
@@ -339,7 +413,7 @@ footer a:hover{ text-decoration:underline; color:var(--ink); }
     <div class="decide-head">
       <p class="eyebrow rise">The rule</p>
       <h2 class="rise">One decision, made the same way every time.</h2>
-      <p class="rise">Mutify mutes when the sound would come out of speakers the room can hear, on a network you haven't vouched for. That's the whole of it. Change either half below and watch the verdict move.</p>
+      <p class="rise">Every one of those rooms is the same two facts: the sound would come out of something the room can hear, on a network you haven't vouched for. That's the whole rule. Change either half below and watch the verdict move.</p>
     </div>
 
     <div class="console rise">
@@ -413,7 +487,7 @@ footer a:hover{ text-decoration:underline; color:var(--ink); }
       <p class="rise">A volume Mutify lowered is put back when sound is allowed again, on the device it lowered, and only if you haven't changed it yourself in the meantime.</p>
     </div>
     <figure class="rise">
-      <img src="/img/general.webp" alt="Mutify's General settings pane on a Mac joined to a café network, reading “Muted — Café Kollektiv isn't on your allow list”, with buttons to allow sound for 15 minutes or an hour." width="1240" height="1576" loading="lazy">
+      <img src="/img/menu.webp" alt="Mutify's menu bar menu: what it's doing and why, then allow sound for 15 minutes, 30 minutes, an hour, until tomorrow morning, or until you leave this network, then the allow and mute lists, Pause, Settings and Quit." width="978" height="710" loading="lazy">
     </figure>
   </div>
 </section>
@@ -461,7 +535,7 @@ footer a:hover{ text-decoration:underline; color:var(--ink); }
 
 <footer>
   <div class="wrap foot-row">
-    <span>Mutify — made in Berlin by <a href="https://schmedu.com">Eduard Uffelmann</a></span>
+    <span>Mutify — made in Berlin by <a href="https://e.uffelmann.me">Eduard Uffelmann</a></span>
     <span class="sep"><a href="https://github.com/Schmedu/mutify">Source &amp; free download</a></span>
     <span><a href="https://github.com/Schmedu/mutify/blob/main/PRD.md">Why it works this way</a></span>
     <span><a href="/legal">Imprint</a></span>
@@ -644,12 +718,14 @@ onScroll();
 addEventListener('scroll', onScroll, { passive: true });
 
 // ── one quiet entrance ─────────────────────────────────────────────────────
-if (matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+if (!('IntersectionObserver' in window) || !matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+  document.querySelectorAll('.rise').forEach((el) => el.classList.add('in'));
+} else {
   const io = new IntersectionObserver((entries) => {
     for (const e of entries) {
       if (!e.isIntersecting) continue;
       const row = e.target.parentElement?.querySelectorAll?.('.rise') ?? [e.target];
-      e.target.style.transitionDelay = `${Math.min([...row].indexOf(e.target), 5) * 70}ms`;
+      e.target.style.transitionDelay = `${Math.min([...row].indexOf(e.target), 5) * 55}ms`;
       e.target.classList.add('in');
       io.unobserve(e.target);
     }

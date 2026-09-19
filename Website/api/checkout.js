@@ -1,6 +1,6 @@
 import { CURRENCY, MAX_AMOUNT, MIN_AMOUNT, PRODUCT_ID, json, stripe } from './_lib.js';
 
-const ALLOWED_HOSTS = [/^mutify\.schmedu\.com$/, /\.vercel\.app$/];
+const ALLOWED_HOSTS = [/^mutify\.e\.uffelmann\.me$/, /^mutify\.schmedu\.com$/, /\.vercel\.app$/];
 
 /** A light throttle so nobody can fill the dashboard with abandoned sessions. */
 const seen = new Map();
@@ -68,7 +68,7 @@ function originOf(req) {
   if (ALLOWED_HOSTS.some((re) => re.test(host))) {
     return `${req.headers['x-forwarded-proto'] ?? 'https'}://${host}`;
   }
-  return process.env.SITE_URL ?? 'https://mutify.schmedu.com';
+  return process.env.SITE_URL ?? 'https://mutify.e.uffelmann.me';
 }
 
 function throttled(req) {

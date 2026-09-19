@@ -2,6 +2,11 @@
 
 Ready to post. Every screenshot is the real app — no mock-ups, no redrawn UI.
 
+One file here is not a screenshot: `07-room.jpg` is a generated image of a
+coworking space, used as the backdrop of the website's hero so the app's real
+status card has a room to sit in. It depicts nobody real and no real place.
+Everything else on this list is a capture.
+
 | File | Size | Use |
 |---|---|---|
 | `01-hero.png` | 2400×1350 | The main one: muted in a café, with the General pane |
@@ -10,6 +15,7 @@ Ready to post. Every screenshot is the real app — no mock-ups, no redrawn UI.
 | `04-devices.png` | 2400×1350 | Headphones are never touched |
 | `05-square.png` | 1600×1600 | Square crop for a carousel cover or an avatar-shaped slot |
 | `06-icon.png` | 1600×1600 | The icon on its own, light background |
+| `07-room.jpg` | 2400×1792 | The coworking room on the website's hero — **generated, not a photograph** |
 
 `screenshots/` holds the bare window captures behind those, at 2× with
 transparent rounded corners — drop them on any background you like.
