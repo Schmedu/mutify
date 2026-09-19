@@ -5,6 +5,8 @@ somewhere sound isn't welcome and the sound would come out of speakers the room
 can hear. Headphones are never touched. See [PRD.md](PRD.md) for the reasoning
 behind every rule.
 
+![Mutify's General settings on a Mac joined to a café network: "Muted — “Café Kollektiv” isn't on your allow list", with buttons to allow sound for 15 minutes, an hour, or until you leave the network](Marketing/01-hero.png)
+
 ## Download
 
 [Releases](https://github.com/Schmedu/mutify/releases) — a signed, notarized DMG
@@ -32,10 +34,14 @@ mute  ⟺  set up and not paused
 | Built-in speakers, a monitor over HDMI | treated as room-audible |
 | Virtual/USB devices | classified by you on the **Devices** tab |
 
+![The Devices tab listing AirPods Pro, MacBook Pro Speakers, a Scarlett Solo USB interface and a Studio Display, each set to Automatic or Speakers](Marketing/04-devices.png)
+
 **Temporary escape hatches:** allow sound for 15/30 minutes, an hour, until
 tomorrow morning, or until you leave this network — plus an indefinite pause.
 A volume Mutify lowered is put back when sound is allowed again, on the device it
 lowered it on, and only if you haven't changed it yourself in the meantime.
+
+![The menu bar menu: what Mutify is doing and why, then allow sound for 15 minutes, 30 minutes, an hour, until tomorrow morning or until you leave this network, then the allow and mute lists, Pause, Settings and Quit](Marketing/02-menu.png)
 
 ## Build and install
 
@@ -111,6 +117,8 @@ no permission at all and is the better identifier anyway — two cafés both cal
 "FRITZ!Box" are two different networks, and this tells them apart. Networks
 identified this way show up as *"Unnamed network (router …2b:3c)"*, and you can
 give them a name of your own on the Networks tab.
+
+![The Networks tab: an allow list holding Home and Studio 4B, a mute list holding Library Public and Airport Free WiFi, and the networks you've been on below](Marketing/03-networks.png)
 
 Granting Location access is still worth it: the real Wi-Fi name then appears
 instead. A network is matched by **either** identifier, so entries added before
