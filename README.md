@@ -68,7 +68,14 @@ that built them — Gatekeeper refuses them everywhere else, which is what
     --apple-id <apple id> --team-id <team id> --password <app-specific password>
   ```
 
-  (`MUTIFY_NOTARY_PROFILE=<name>` to use a different profile.)
+  (`MUTIFY_NOTARY_PROFILE=<name>` to use a different profile.) A shell that
+  can't write to the login keychain — any non-interactive one — can pass the
+  same credentials per run instead, which are never stored:
+
+  ```sh
+  MUTIFY_APPLE_ID=<apple id> MUTIFY_NOTARY_PASSWORD=<app-specific password> \
+    ./Scripts/build.sh --release
+  ```
 
 It then signs with the hardened runtime and a secure timestamp, notarizes the
 app, staples the ticket into the app *and* into the disk image — so a Mac that

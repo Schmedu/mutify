@@ -16,6 +16,15 @@ RELEASE=0
 # `notarytool store-credentials` keeps the Apple ID and the app-specific
 # password in the keychain, so no secret has to live in this script or in CI.
 NOTARY_PROFILE="${MUTIFY_NOTARY_PROFILE:-mutify-notary}"
+# Fallback for a shell that can't reach the login keychain — writing to it needs
+# a session that may prompt, which a non-interactive one never gets. Set
+# MUTIFY_APPLE_ID and MUTIFY_NOTARY_PASSWORD (an app-specific password) and the
+# credentials are passed per call instead, living only in this process.
+APPLE_ID="${MUTIFY_APPLE_ID:-}"
+NOTARY_PASSWORD="${MUTIFY_NOTARY_PASSWORD:-}"
+NOTARY_TEAM="${MUTIFY_TEAM_ID:-}"
+NOTARY_AUTH=(--keychain-profile "$NOTARY_PROFILE")
+NOTARY_AUTH_HINT="--keychain-profile $NOTARY_PROFILE"
 
 for arg in "$@"; do
     case "$arg" in
@@ -60,15 +69,29 @@ MSG
         exit 1
     fi
     if ! xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null 2>&1; then
-        cat >&2 <<MSG
+        # No stored profile: fall back to credentials passed in the environment.
+        NOTARY_TEAM="${NOTARY_TEAM:-$(printf '%s' "$IDENTITY" | grep -oE '\(([A-Z0-9]{10})\)$' | tr -d '()')}"
+        if [[ -n "$APPLE_ID" && -n "$NOTARY_PASSWORD" && -n "$NOTARY_TEAM" ]]; then
+            NOTARY_AUTH=(--apple-id "$APPLE_ID" --team-id "$NOTARY_TEAM" --password "$NOTARY_PASSWORD")
+            NOTARY_AUTH_HINT="--apple-id $APPLE_ID --team-id $NOTARY_TEAM --password <app-specific password>"
+        else
+            cat >&2 <<MSG
 ✗ Notary credentials "${NOTARY_PROFILE}" aren't in the keychain — or Apple can't be reached.
-  Store them once:
+  Store them once, from a terminal that can prompt for keychain access:
     xcrun notarytool store-credentials "${NOTARY_PROFILE}" \\
       --apple-id <apple id> --team-id <team id> --password <app-specific password>
   App-specific passwords: appleid.apple.com ▸ Sign-In and Security.
   Another profile name: MUTIFY_NOTARY_PROFILE=<name> ./Scripts/build.sh --release
+  Or, without touching the keychain at all:
+    MUTIFY_APPLE_ID=<apple id> MUTIFY_NOTARY_PASSWORD=<app-specific password> \\
+      ./Scripts/build.sh --release
 MSG
-        exit 1
+            exit 1
+        fi
+        if ! xcrun notarytool history "${NOTARY_AUTH[@]}" >/dev/null 2>&1; then
+            echo "✗ Apple rejected the credentials in MUTIFY_APPLE_ID / MUTIFY_NOTARY_PASSWORD." >&2
+            exit 1
+        fi
     fi
     if [[ -n "$(git -C "$ROOT" status --porcelain)" ]]; then
         echo "⚠ Working tree isn't clean — the build number comes from the commit count."
@@ -133,12 +156,12 @@ if [[ $RELEASE -eq 1 ]]; then
     # build, and the log id is the only way to find out what was wrong.
     notarize() {
         local out id
-        out="$(xcrun notarytool submit "$1" --keychain-profile "$NOTARY_PROFILE" --wait 2>&1)"
+        out="$(xcrun notarytool submit "$1" "${NOTARY_AUTH[@]}" --wait 2>&1)"
         printf '%s\n' "$out" | sed 's/^/    /'
         if ! grep -q "status: Accepted" <<<"$out"; then
             id="$(grep -m1 -Eo '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' <<<"$out" || true)"
             echo "✗ Notarization failed. What Apple objected to:" >&2
-            echo "    xcrun notarytool log ${id:-<submission id>} --keychain-profile $NOTARY_PROFILE" >&2
+            echo "    xcrun notarytool log ${id:-<submission id>} $NOTARY_AUTH_HINT" >&2
             exit 1
         fi
     }
