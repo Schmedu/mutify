@@ -53,7 +53,7 @@ const sessionId = params.get('session_id') ?? '';
 
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
 const money = (cents, cur) =>
-  (cents / 100).toLocaleString('en-IE', { style: 'currency', currency: (cur ?? 'eur').toUpperCase() });
+  (cents / 100).toLocaleString('de-DE', { style: 'currency', currency: (cur ?? 'eur').toUpperCase() });
 
 function fail(head, body) {
   state.innerHTML = `

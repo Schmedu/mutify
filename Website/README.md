@@ -14,16 +14,21 @@ api/checkout.js     POST {amount} → a Checkout Session URL
 api/download.js     GET ?session_id → 302 to the DMG, once Stripe says "paid"
 ```
 
-## Pay what you want, €0.99 floor
+## Pay what you want, 0,99 € floor
 
 There is no fixed price object in the checkout. `api/checkout.js` builds the
 line item from `price_data` against the tracked product, so the buyer's own
 figure goes straight through — clamped to `[MIN_AMOUNT, MAX_AMOUNT]` in
-`api/_lib.js` (99 cents to €500) before Stripe ever sees it.
+`api/_lib.js` (99 cents to 500 €) before Stripe ever sees it.
 
 `tax_behavior: 'inclusive'` means the number on the button is the number that
 gets charged; Stripe Tax carves the VAT out of it once it knows the country.
-The canonical €0.99 price object still exists for the record:
+
+Amounts are written the German way round — `0,99 €`, symbol trailing, comma
+for the decimal — via `de-DE` formatting. The custom field takes `3`, `3,50` and
+`3.50` alike, and `parseAmount` rejects everything else before it can reach
+Stripe.
+The canonical 0,99 € price object still exists for the record:
 
 ```sh
 ~/.claude/skills/stripe/get-id.sh STRIPE_PRODUCT_MUTIFY   --project stripe-eduard --env prod

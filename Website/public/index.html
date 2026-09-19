@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mutify — never be the laptop that starts playing</title>
-<meta name="description" content="Open the lid in a coworking space, an office, a lecture hall or a café, and yesterday's playlist fills the room. Mutify takes the volume to zero on any Wi-Fi you haven't vouched for — and never touches your headphones. €0.99, pay what you like.">
+<meta name="description" content="Open the lid in a coworking space, an office, a lecture hall or a café, and yesterday's playlist fills the room. Mutify takes the volume to zero on any Wi-Fi you haven't vouched for — and never touches your headphones. 0,99 €, pay what you like.">
 <link rel="icon" href="/favicon.png" type="image/png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <meta property="og:title" content="Mutify — never be the laptop that starts playing">
@@ -308,7 +308,7 @@ h1 .quiet-word{ font-style:italic; color:var(--indigo); }
 @media (prefers-color-scheme:dark){ .amount[aria-pressed="true"]{ color:oklch(18% .03 280); } }
 .amount small{ display:block; font-size:.6875rem; font-weight:500; letter-spacing:.06em; text-transform:uppercase; opacity:.72; margin-top:.15rem; }
 
-.custom{ margin-top:.9rem; display:flex; align-items:center; gap:.6rem; border:1px solid var(--rule); border-radius:.8rem; padding:.2rem .3rem .2rem .9rem; background:var(--paper); transition:border-color .18s; }
+.custom{ margin-top:.9rem; display:flex; align-items:center; gap:.6rem; border:1px solid var(--rule); border-radius:.8rem; padding:.2rem 1rem .2rem .9rem; background:var(--paper); transition:border-color .18s; }
 .custom:focus-within{ border-color:var(--indigo); }
 .custom span{ color:var(--ink-3); font-weight:600; }
 .custom input{
@@ -349,7 +349,7 @@ footer a:hover{ text-decoration:underline; color:var(--ink); }
     <nav>
       <a href="#decide">How it decides</a>
       <a href="https://github.com/Schmedu/mutify">Source</a>
-      <a class="btn btn-quiet ghost" href="#buy">Get it — €0.99</a>
+      <a class="btn btn-quiet ghost" href="#buy">Get it — 0,99 €</a>
     </nav>
   </div>
 </header>
@@ -362,7 +362,7 @@ footer a:hover{ text-decoration:underline; color:var(--ink); }
       <h1 class="rise">You open the lid. Yesterday's playlist <em class="quiet-word">fills the room.</em></h1>
       <p class="lede rise">It only has to happen once. Mutify takes the volume to zero on any Wi-Fi you haven't vouched for — and never touches your headphones.</p>
       <div class="cta-row rise">
-        <a class="btn btn-accent" href="#buy">Get Mutify — €0.99</a>
+        <a class="btn btn-accent" href="#buy">Get Mutify — 0,99 €</a>
         <a class="btn btn-quiet" href="#decide">See how it decides</a>
       </div>
       <p class="cta-note rise">macOS 14 or later, Apple Silicon. Signed and notarized — no Gatekeeper detour. No account, no analytics, no updater.</p>
@@ -519,11 +519,11 @@ footer a:hover{ text-decoration:underline; color:var(--ink); }
       <div class="amounts" role="group" aria-label="Choose an amount" id="amounts"></div>
 
       <label class="custom" for="custom-amount">
-        <span>€</span>
-        <input id="custom-amount" type="number" inputmode="decimal" min="0.99" max="500" step="0.01" placeholder="Something else" aria-label="A different amount in euros">
+        <input id="custom-amount" type="text" inputmode="decimal" autocomplete="off" placeholder="Something else" aria-label="A different amount in euros">
+        <span aria-hidden="true">€</span>
       </label>
 
-      <button class="btn btn-accent" id="pay" type="button">Pay €0.99 and download</button>
+      <button class="btn btn-accent" id="pay" type="button">Pay 0,99 € and download</button>
       <p class="err" id="err" role="alert"></p>
 
       <p class="smallprint">Card, Apple&nbsp;Pay, Google&nbsp;Pay and Link, handled by Stripe — the card never touches this site. VAT included. The download starts the moment the payment clears, which means you're waiving the 14-day right of withdrawal; the no-questions refund stands anyway. <a href="/legal">Terms and imprint</a>.</p>
@@ -635,10 +635,10 @@ render();
 
 // ── choose your price ──────────────────────────────────────────────────────
 const PRESETS = [
-  { cents: 99,   label:'€0.99', note:'the floor' },
-  { cents: 300,  label:'€3',    note:'' },
-  { cents: 700,  label:'€7',    note:'' },
-  { cents: 1500, label:'€15',   note:'generous' },
+  { cents: 99,   label:'0,99 €', note:'the floor' },
+  { cents: 300,  label:'3 €',    note:'' },
+  { cents: 700,  label:'7 €',    note:'' },
+  { cents: 1500, label:'15 €',   note:'generous' },
 ];
 const MIN = 99;
 
@@ -648,7 +648,14 @@ const customInput = document.getElementById('custom-amount');
 const payBtn = document.getElementById('pay');
 const errBox = document.getElementById('err');
 
-const euros = (c) => (c / 100).toLocaleString('en-IE', { style:'currency', currency:'EUR' });
+/** Accepts "3", "3,50" and "3.50" alike — and nothing else. */
+function parseAmount(raw) {
+  const cleaned = String(raw).trim().replace(/\s|€/g, '').replace(',', '.');
+  if (!/^\d+(\.\d{1,2})?$/.test(cleaned)) return NaN;
+  return Math.round(Number(cleaned) * 100);
+}
+
+const euros = (c) => (c / 100).toLocaleString('de-DE', { style:'currency', currency:'EUR' });
 
 function paintAmounts() {
   amountBox.replaceChildren(...PRESETS.map((p) => {
@@ -670,7 +677,7 @@ function paintAmounts() {
 paintAmounts();
 
 customInput.addEventListener('input', () => {
-  const cents = Math.round(Number(customInput.value.replace(',', '.')) * 100);
+  const cents = parseAmount(customInput.value);
   if (Number.isFinite(cents) && cents >= MIN) {
     amount = cents;
     errBox.textContent = '';
@@ -681,9 +688,9 @@ customInput.addEventListener('input', () => {
 payBtn.addEventListener('click', async () => {
   const typed = customInput.value.trim();
   if (typed) {
-    const cents = Math.round(Number(typed.replace(',', '.')) * 100);
+    const cents = parseAmount(typed);
     if (!Number.isFinite(cents) || cents < MIN) {
-      errBox.textContent = 'The floor is €0.99 — pick that or more.';
+      errBox.textContent = 'The floor is 0,99 € — pick that or more.';
       customInput.focus();
       return;
     }
