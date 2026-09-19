@@ -21,8 +21,6 @@ final class AppState {
     private(set) var locationPermissionMissing = false
     private(set) var loginItemEnabled = false
 
-    var activity: [ActivityEntry] { logger.entries }
-
     // MARK: - Collaborators
 
     @ObservationIgnored private let audio = AudioController()

@@ -11,7 +11,7 @@ import SwiftUI
 /// move between settings panes.
 @MainActor
 enum SettingsPane: CaseIterable {
-    case general, networks, devices, activity, about
+    case general, networks, devices, about
 
     /// Every pane is the same size, so switching panes doesn't resize the window.
     static let contentSize = NSSize(width: 620, height: 560)
@@ -21,7 +21,6 @@ enum SettingsPane: CaseIterable {
         case .general: "General"
         case .networks: "Networks"
         case .devices: "Devices"
-        case .activity: "Activity"
         case .about: "About"
         }
     }
@@ -31,7 +30,6 @@ enum SettingsPane: CaseIterable {
         case .general: "gearshape"
         case .networks: "wifi"
         case .devices: "hifispeaker"
-        case .activity: "list.bullet.rectangle"
         case .about: "info.circle"
         }
     }
@@ -49,7 +47,6 @@ enum SettingsPane: CaseIterable {
             case .general: GeneralTab(state: state)
             case .networks: NetworksTab(state: state)
             case .devices: DevicesTab(state: state)
-            case .activity: ActivityTab(state: state)
             case .about: AboutTab()
             }
         }
@@ -451,53 +448,6 @@ private struct DeviceRow: View {
                 }
             }
         )
-    }
-}
-
-// MARK: - Activity
-
-private struct ActivityTab: View {
-    @Bindable var state: AppState
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if state.activity.isEmpty {
-                Spacer()
-                Text("Nothing yet.")
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                Spacer()
-            } else {
-                List(state.activity) { entry in
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack {
-                            Text(entry.action.title).fontWeight(.medium)
-                            Text("· \(entry.trigger.title)").foregroundStyle(.secondary)
-                            Spacer()
-                            Text(entry.date, style: .time)
-                                .foregroundStyle(.secondary)
-                                .monospacedDigit()
-                        }
-                        Text(entry.detail).font(.caption)
-                        Text([entry.ssid, entry.device].compactMap { $0 }.joined(separator: " · "))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 2)
-                }
-            }
-            Divider()
-            HStack {
-                Text("The full history is kept in ~/Library/Logs/Mutify.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button("Show log file") {
-                    NSWorkspace.shared.activateFileViewerSelecting([Paths.logFile])
-                }
-            }
-            .padding(12)
-        }
     }
 }
 
