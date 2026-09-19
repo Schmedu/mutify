@@ -134,3 +134,7 @@ first if that device is the current output.
 - `Sources/MutifyCore` — the decision engine. Pure functions, no I/O, no frameworks.
 - `Sources/Mutify` — CoreAudio, CoreWLAN, CoreLocation, the menu and the window.
 - `Tests/MutifyCoreTests` — one test per rule and per scenario in the PRD.
+
+## Licence
+
+MIT — see [LICENSE](LICENSE).
