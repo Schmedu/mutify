@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thank you — Mutify</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..600;1,6..72,200..500&family=Karla:wght@300..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/_shared.css">
+<meta name="theme-color" content="#f7f6fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16151f" media="(prefers-color-scheme: dark)">
+<style>
+  .state{min-height:16rem}
+  .lede{margin-top:1.5rem;font-size:1.1875rem;color:var(--ink-2);max-width:44ch;line-height:1.5}
+  .actions{margin-top:2.25rem;display:flex;flex-wrap:wrap;gap:.75rem;align-items:center}
+  .receipt{margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid var(--rule);
+    display:grid;gap:.6rem;font-size:.9375rem;max-width:34rem}
+  .receipt div{display:flex;justify-content:space-between;gap:1.5rem}
+  .receipt dt{color:var(--ink-3)}
+  .receipt dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+  .next{margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid var(--rule)}
+  .next ol{margin:1rem 0 0;padding-left:1.15rem;display:grid;gap:.6rem;color:var(--ink-2);max-width:46ch}
+  .next li::marker{color:var(--ink-3);font-variant-numeric:tabular-nums}
+  .hint{margin-top:1.25rem;font-size:.875rem;color:var(--ink-3);max-width:46ch;line-height:1.55}
+  .spin{display:inline-block;width:.85rem;height:.85rem;border-radius:50%;
+    border:2px solid var(--rule);border-top-color:var(--ink-3);animation:spin .7s linear infinite;vertical-align:-1px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.spin{animation-duration:2s}}
+</style>
+</head>
+<body>
+
+<header><div class="wrap bar"><a class="mark" href="/"><img src="/img/icon.webp" alt="" width="28" height="28"> Mutify</a></div></header>
+
+<main><div class="wrap state" id="state">
+  <p class="eyebrow"><span class="spin"></span> Checking your receipt</p>
+  <h1 style="margin-top:1.25rem">One moment.</h1>
+</div></main>
+
+<footer><div class="wrap foot-row">
+  <span>Trouble? <a href="mailto:hi@schmedu.com">hi@schmedu.com</a></span>
+  <span><a href="https://github.com/Schmedu/mutify">Source</a></span>
+  <span><a href="/legal">Imprint</a></span>
+</div></footer>
+
+<script type="module">
+const state = document.getElementById('state');
+const params = new URLSearchParams(location.search);
+const sessionId = params.get('session_id') ?? '';
+
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[c]));
+const money = (cents, cur) =>
+  (cents / 100).toLocaleString('en-IE', { style: 'currency', currency: (cur ?? 'eur').toUpperCase() });
+
+function fail(head, body) {
+  state.innerHTML = `
+    <p class="eyebrow">Nothing to unlock</p>
+    <h1 style="margin-top:1.25rem">${esc(head)}</h1>
+    <p class="lede">${esc(body)}</p>
+    <div class="actions">
+      <a class="btn btn-accent" href="/#buy">Back to the page</a>
+      <a class="btn btn-quiet" href="https://github.com/Schmedu/mutify/releases/latest">Free download on GitHub</a>
+    </div>`;
+}
+
+if (!sessionId) {
+  fail('This page needs a receipt.', 'It opens by itself after a payment. If you just bought Mutify and landed here empty-handed, email me and I will send the build straight over.');
+} else {
+  try {
+    const res = await fetch(`/api/download?json=1&session_id=${encodeURIComponent(sessionId)}`);
+    const data = await res.json();
+
+    if (!data.paid) {
+      fail("That payment hasn't cleared.", data.error ?? 'Stripe has no completed payment for this link. Nothing was charged.');
+    } else {
+      const href = `/api/download?session_id=${encodeURIComponent(sessionId)}`;
+      state.innerHTML = `
+        <p class="eyebrow">Paid — thank you</p>
+        <h1 style="margin-top:1.25rem">Mutify is yours.</h1>
+        <p class="lede">Mutify ${esc(data.version)} for macOS, signed and notarized. Keep this page — the link works as long as you have it.</p>
+        <div class="actions">
+          <a class="btn btn-accent" href="${href}" id="dl">Download Mutify ${esc(data.version)}</a>
+          <a class="btn btn-quiet" href="https://github.com/Schmedu/mutify/blob/main/README.md">Read the manual</a>
+        </div>
+        <dl class="receipt">
+          <div><dt>Paid</dt><dd>${esc(money(data.amount, data.currency))}</dd></div>
+          ${data.email ? `<div><dt>Receipt sent to</dt><dd>${esc(data.email)}</dd></div>` : ''}
+          <div><dt>Requires</dt><dd>macOS 14+, Apple Silicon</dd></div>
+        </dl>
+        <div class="next">
+          <h2>Then, once:</h2>
+          <ol>
+            <li>Open the DMG and drag Mutify to Applications.</li>
+            <li>Launch it. It's notarized, so there's no Gatekeeper detour.</li>
+            <li>Add the Wi-Fi you're on now to the allow list — everything else is muted until you say otherwise.</li>
+          </ol>
+          <p class="hint">If the menu bar icon doesn't appear, your menu bar is full and macOS parked it out of sight. Open Mutify again and its window comes up with every control the menu has.</p>
+        </div>`;
+      // Start the download without making them click twice.
+      setTimeout(() => { location.href = href; }, 900);
+    }
+  } catch {
+    fail("Couldn't reach Stripe.", 'The payment is fine — this page just could not check it. Reload in a moment, or email hi@schmedu.com and I will send the build over.');
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "name": "mutify-website",
+  "private": true,
+  "type": "module",
+  "description": "mutify.schmedu.com — landing page and pay-what-you-want checkout"
+}

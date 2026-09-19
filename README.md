@@ -14,6 +14,10 @@ notarized DMG for Apple Silicon, macOS 14 or newer. Drag it to Applications; it
 opens without a Gatekeeper detour. No installer and no updater: a new version is
 a new download.
 
+Free, here, always. [**mutify.schmedu.com**](https://mutify.schmedu.com) sells
+the same build for whatever you think it's worth, starting at 99 cents, if
+you'd rather say thank you that way.
+
 ## How it decides
 
 ```

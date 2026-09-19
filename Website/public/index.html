@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mutify — your Mac goes quiet where sound isn't welcome</title>
+<meta name="description" content="A macOS menu bar app that sets the output volume to zero on any Wi-Fi you haven't allowed — and never touches your headphones. €0.99, pay what you like.">
+<link rel="icon" href="/favicon.png" type="image/png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:title" content="Mutify — your Mac goes quiet where sound isn't welcome">
+<meta property="og:description" content="Sets the output volume to zero on any Wi-Fi you haven't allowed. Headphones are never touched. macOS 14+, Apple Silicon.">
+<meta property="og:image" content="https://mutify.schmedu.com/img/icon.png">
+<meta property="og:url" content="https://mutify.schmedu.com/">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#f7f6fb" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16151f" media="(prefers-color-scheme: dark)">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..600;1,6..72,200..500&family=Karla:ital,wght@0,300..700;1,400..600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --paper:    oklch(98.4% 0.005 280);
+  --paper-2:  oklch(96.0% 0.009 280);
+  --ink:      oklch(24% 0.035 280);
+  --ink-2:    oklch(47% 0.028 280);
+  --ink-3:    oklch(62% 0.022 280);
+  --rule:     oklch(89% 0.014 280);
+  --rule-2:   oklch(93.5% 0.010 280);
+  --indigo:   oklch(51% 0.19 277);
+  --indigo-2: oklch(46% 0.20 300);
+  --quiet:    oklch(52% 0.15 22);
+  --live:     oklch(50% 0.13 158);
+  --shadow:   oklch(30% 0.06 280 / 0.10);
+
+  --display: "Newsreader", ui-serif, Georgia, serif;
+  --body: "Karla", ui-sans-serif, system-ui, sans-serif;
+
+  --measure: 62ch;
+  --gutter: clamp(1.25rem, 5vw, 4rem);
+  --page: 78rem;
+
+  --ease: cubic-bezier(.22,1,.36,1);
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:    oklch(16.5% 0.022 280);
+    --paper-2:  oklch(20.5% 0.026 280);
+    --ink:      oklch(94% 0.012 280);
+    --ink-2:    oklch(74% 0.018 280);
+    --ink-3:    oklch(58% 0.020 280);
+    --rule:     oklch(30% 0.024 280);
+    --rule-2:   oklch(25% 0.022 280);
+    --indigo:   oklch(74% 0.14 277);
+    --indigo-2: oklch(72% 0.15 302);
+    --quiet:    oklch(70% 0.14 25);
+    --live:     oklch(74% 0.14 158);
+    --shadow:   oklch(4% 0.02 280 / 0.5);
+  }
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+html{ -webkit-text-size-adjust:100%; scroll-behavior:smooth; }
+@media (prefers-reduced-motion:reduce){ html{ scroll-behavior:auto; } }
+
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--body);
+  font-size:clamp(1rem, .96rem + .2vw, 1.0625rem);
+  line-height:1.6;
+  font-weight:400;
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+
+h1,h2,h3{ font-family:var(--display); font-weight:380; line-height:1.04; letter-spacing:-.018em; margin:0; }
+h1{ font-size:clamp(2.6rem, 1.5rem + 4.6vw, 5rem); text-wrap:balance; max-width:13ch; }
+h2{ font-size:clamp(2rem, 1.2rem + 3.2vw, 3.5rem); }
+h3{ font-size:clamp(1.25rem, 1.1rem + .6vw, 1.5rem); font-weight:420; letter-spacing:-.012em; }
+p{ margin:0; }
+a{ color:inherit; }
+
+em{ font-style:italic; }
+.wrap{ width:min(100% - var(--gutter)*2, var(--page)); margin-inline:auto; }
+
+/* ── the tiny caps label that marks each movement of the page ─────────── */
+.eyebrow{
+  font-family:var(--body);
+  font-size:.75rem; font-weight:600;
+  letter-spacing:.14em; text-transform:uppercase;
+  color:var(--ink-3);
+  display:flex; align-items:center; gap:.75rem;
+}
+.eyebrow::after{ content:""; flex:1; height:1px; background:var(--rule); }
+
+/* ── header ───────────────────────────────────────────────────────────── */
+header{
+  position:sticky; top:0; z-index:50;
+  background:color-mix(in oklab, var(--paper) 86%, transparent);
+  backdrop-filter:saturate(1.4) blur(12px);
+  border-bottom:1px solid transparent;
+  transition:border-color .3s var(--ease);
+}
+header.scrolled{ border-bottom-color:var(--rule); }
+.bar{ display:flex; align-items:center; gap:.7rem; height:4rem; }
+.mark{ display:flex; align-items:center; gap:.65rem; text-decoration:none; font-weight:600; letter-spacing:-.01em; font-size:1.0625rem; }
+.mark img{ width:28px; height:28px; border-radius:7px; display:block; }
+.bar nav{ margin-left:auto; display:flex; align-items:center; gap:clamp(.9rem,2.4vw,1.9rem); font-size:.9375rem; }
+.bar nav a{ text-decoration:none; color:var(--ink-2); transition:color .18s; }
+.bar nav a:hover{ color:var(--ink); }
+.bar .ghost{ display:none; }
+@media (min-width:46rem){ .bar .ghost{ display:inline-flex; } }
+
+/* ── buttons ──────────────────────────────────────────────────────────── */
+.btn{
+  --bg:var(--ink); --fg:var(--paper);
+  display:inline-flex; align-items:center; justify-content:center; gap:.55rem;
+  font-family:var(--body); font-size:1rem; font-weight:600; letter-spacing:-.005em;
+  padding:.85rem 1.5rem; border:1px solid transparent; border-radius:999px;
+  background:var(--bg); color:var(--fg); text-decoration:none; cursor:pointer;
+  transition:transform .3s var(--ease), box-shadow .3s var(--ease), background .18s, opacity .18s;
+}
+.btn:hover{ transform:translateY(-1.5px); box-shadow:0 10px 26px -12px var(--shadow); }
+.btn:active{ transform:translateY(0); }
+.btn:disabled{ opacity:.5; cursor:progress; transform:none; }
+.btn-accent{ --bg:var(--indigo); --fg:oklch(99% 0 0); }
+@media (prefers-color-scheme:dark){ .btn-accent{ --fg:oklch(18% .03 280); } }
+.btn-quiet{ --bg:transparent; --fg:var(--ink); border-color:var(--rule); font-weight:500; }
+.btn-quiet:hover{ background:var(--paper-2); }
+:where(a,button,input,select,summary):focus-visible{
+  outline:2px solid var(--indigo); outline-offset:3px; border-radius:6px;
+}
+
+/* ── hero ─────────────────────────────────────────────────────────────── */
+.hero{ padding:clamp(3rem,7vw,6.5rem) 0 clamp(2.5rem,5vw,4rem); }
+.hero-grid{ display:grid; gap:clamp(2.5rem,5vw,4rem); align-items:center; }
+@media (min-width:60rem){ .hero-grid{ grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr); } }
+
+h1 .quiet-word{ font-style:italic; color:var(--indigo); }
+
+.lede{
+  margin-top:clamp(1.5rem,2.5vw,2rem);
+  font-size:clamp(1.125rem,1.02rem + .5vw,1.375rem);
+  line-height:1.5; color:var(--ink-2); max-width:34ch;
+}
+.cta-row{ margin-top:clamp(1.75rem,3vw,2.5rem); display:flex; flex-wrap:wrap; gap:.75rem; align-items:center; }
+.cta-note{ margin-top:1.1rem; font-size:.875rem; color:var(--ink-3); line-height:1.5; }
+
+.shot-float{ position:relative; }
+.shot-stage{
+  border-radius:1.5rem; padding:clamp(1.5rem,3.5vw,2.75rem);
+  background:
+    radial-gradient(120% 130% at 12% -10%, oklch(66% .16 268 / .95), transparent 62%),
+    linear-gradient(155deg, oklch(54% .185 272), oklch(45% .20 306));
+  box-shadow:0 34px 70px -28px oklch(35% .12 290 / .55);
+}
+.shot-stage img{ width:100%; height:auto; display:block; border-radius:.75rem;
+  filter:drop-shadow(0 20px 40px oklch(22% .09 292 / .5)); }
+.shot-float figcaption{ margin-top:1.1rem; font-size:.8125rem; color:var(--ink-3); line-height:1.5; max-width:38ch; }
+
+/* ── the decision ─────────────────────────────────────────────────────── */
+.decide{ padding:clamp(3.5rem,7vw,6rem) 0; border-top:1px solid var(--rule); }
+.decide-head{ max-width:var(--measure); }
+.decide-head h2{ margin-top:1.75rem; }
+.decide-head p{ margin-top:1.25rem; color:var(--ink-2); max-width:52ch; }
+
+.console{
+  margin-top:clamp(2.25rem,4vw,3.25rem);
+  display:grid; gap:0;
+  border:1px solid var(--rule); border-radius:1.25rem; overflow:clip;
+  background:var(--paper-2);
+}
+@media (min-width:56rem){ .console{ grid-template-columns:minmax(0,1fr) minmax(0,1.1fr); } }
+
+.picks{ padding:clamp(1.5rem,3vw,2.25rem); display:grid; gap:2rem; align-content:start; }
+@media (min-width:56rem){ .picks{ border-right:1px solid var(--rule); } }
+.pick > .eyebrow{ margin-bottom:.9rem; }
+.opts{ display:grid; gap:.5rem; }
+.opt{
+  display:flex; flex-wrap:wrap; align-items:baseline; gap:.35rem .75rem; width:100%; text-align:left;
+  font:inherit; color:var(--ink-2); cursor:pointer;
+  background:transparent; border:1px solid transparent; border-radius:.7rem;
+  padding:.6rem .8rem;
+  transition:background .18s, color .18s, border-color .18s;
+}
+.opt:hover{ background:color-mix(in oklab, var(--ink) 4%, transparent); color:var(--ink); }
+.opt[aria-pressed="true"]{ background:var(--paper); border-color:var(--rule); color:var(--ink); font-weight:600; box-shadow:0 1px 2px var(--shadow); }
+.opt .tag{ margin-left:auto; font-size:.75rem; font-weight:500; color:var(--ink-3); letter-spacing:.02em; white-space:nowrap; }
+.opt[aria-pressed="true"] .tag{ color:var(--ink-2); }
+
+.verdict{ padding:clamp(1.5rem,3vw,2.25rem); display:grid; align-content:space-between; gap:1.75rem; background:var(--paper); }
+.verdict-state{ display:flex; align-items:center; gap:.7rem; font-size:.8125rem; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--state, var(--ink-3)); }
+.dot{ width:.5rem; height:.5rem; border-radius:50%; background:currentColor; flex:none; }
+.verdict h3{
+  font-size:clamp(1.9rem,1.3rem + 2.4vw,3rem); font-weight:360; line-height:1.08;
+  color:var(--state, var(--ink));
+}
+.verdict .because{ margin-top:1rem; color:var(--ink-2); max-width:40ch; min-height:3lh; }
+.verdict .escapes{ margin-top:1.5rem; padding-top:1.25rem; border-top:1px solid var(--rule-2);
+  font-size:.875rem; color:var(--ink-3); max-width:40ch; line-height:1.55; }
+.verdict .escapes b{ color:var(--ink-2); font-weight:600; }
+
+.meter{ display:grid; gap:.6rem; }
+.meter-row{ display:flex; justify-content:space-between; align-items:baseline; font-size:.8125rem; color:var(--ink-3); }
+.meter-row b{ color:var(--ink-2); font-weight:600; font-variant-numeric:tabular-nums; }
+.meter-track{ height:.5rem; border-radius:999px; background:color-mix(in oklab, var(--ink) 9%, transparent); overflow:hidden; }
+.meter-fill{
+  height:100%; border-radius:999px; background:var(--state, var(--ink-3));
+  transform-origin:left center; transform:scaleX(var(--vol,.62));
+  transition:transform .85s var(--ease), background .3s;
+}
+@media (prefers-reduced-motion:reduce){ .meter-fill{ transition:none; } }
+
+/* ── detail sections ──────────────────────────────────────────────────── */
+.detail{ padding:clamp(3.5rem,7vw,6rem) 0; border-top:1px solid var(--rule); }
+.detail-grid{ display:grid; gap:clamp(2rem,4.5vw,4.5rem); align-items:center; }
+@media (min-width:58rem){
+  .detail-grid{ grid-template-columns:minmax(0,1fr) minmax(0,1fr); }
+  .detail-grid.flip > figure{ order:-1; }
+}
+.detail-copy h2{ margin-top:1.75rem; }
+.detail-copy p{ margin-top:1.25rem; color:var(--ink-2); max-width:46ch; }
+.detail figure{ margin:0; }
+.detail figure img{ width:100%; height:auto; display:block; filter:drop-shadow(0 24px 48px var(--shadow)); }
+
+.list{ margin:1.75rem 0 0; padding:0; list-style:none; display:grid;
+  grid-template-columns:max-content 1fr; gap:0 1.75rem; max-width:46ch; }
+.list li{ display:grid; grid-template-columns:subgrid; grid-column:1 / -1;
+  padding:.85rem 0; border-top:1px solid var(--rule-2); align-items:baseline; }
+.list li:last-child{ border-bottom:1px solid var(--rule-2); }
+.list dt, .list .k{ font-weight:600; font-size:.9375rem; }
+.list .v{ color:var(--ink-2); font-size:.9375rem; }
+
+/* ── the quiet statement ──────────────────────────────────────────────── */
+.statement{ padding:clamp(4rem,9vw,8rem) 0; border-top:1px solid var(--rule); }
+.statement blockquote{
+  margin:0; font-family:var(--display); font-weight:300;
+  font-size:clamp(1.9rem,1rem + 4.2vw,4rem); line-height:1.1; letter-spacing:-.02em;
+  max-width:19ch;
+}
+.statement blockquote em{ color:var(--indigo); }
+.statement .foot{ margin-top:2rem; color:var(--ink-2); max-width:44ch; }
+
+/* ── buy ──────────────────────────────────────────────────────────────── */
+.buy{ padding:clamp(3.5rem,7vw,6rem) 0 clamp(4rem,8vw,7rem); border-top:1px solid var(--rule); scroll-margin-top:5rem; }
+.buy-grid{ display:grid; gap:clamp(2.5rem,5vw,4.5rem); align-items:start; }
+@media (min-width:58rem){ .buy-grid{ grid-template-columns:minmax(0,.95fr) minmax(0,1.05fr); } }
+.buy h2{ margin-top:1.75rem; }
+.buy .pitch{ margin-top:1.25rem; color:var(--ink-2); max-width:42ch; }
+
+.panel{ border:1px solid var(--rule); border-radius:1.25rem; background:var(--paper-2); padding:clamp(1.5rem,3vw,2.25rem); }
+.amounts{ display:grid; grid-template-columns:repeat(2,1fr); gap:.6rem; margin-top:1rem; }
+@media (min-width:30rem){ .amounts{ grid-template-columns:repeat(auto-fit,minmax(5.5rem,1fr)); } }
+.amount{
+  font:inherit; font-weight:600; cursor:pointer; color:var(--ink-2);
+  background:var(--paper); border:1px solid var(--rule); border-radius:.8rem;
+  padding:.85rem .5rem; text-align:center; font-variant-numeric:tabular-nums;
+  transition:border-color .18s, color .18s, transform .3s var(--ease), box-shadow .18s;
+}
+.amount:hover{ color:var(--ink); border-color:var(--ink-3); }
+.amount[aria-pressed="true"]{
+  color:oklch(99% 0 0); background:var(--indigo); border-color:var(--indigo);
+  box-shadow:0 8px 20px -10px var(--shadow);
+}
+@media (prefers-color-scheme:dark){ .amount[aria-pressed="true"]{ color:oklch(18% .03 280); } }
+.amount small{ display:block; font-size:.6875rem; font-weight:500; letter-spacing:.06em; text-transform:uppercase; opacity:.72; margin-top:.15rem; }
+
+.custom{ margin-top:.9rem; display:flex; align-items:center; gap:.6rem; border:1px solid var(--rule); border-radius:.8rem; padding:.2rem .3rem .2rem .9rem; background:var(--paper); transition:border-color .18s; }
+.custom:focus-within{ border-color:var(--indigo); }
+.custom span{ color:var(--ink-3); font-weight:600; }
+.custom input{
+  font:inherit; font-weight:600; font-variant-numeric:tabular-nums;
+  border:0; background:transparent; color:var(--ink); width:100%; padding:.65rem 0; min-width:0;
+}
+.custom input:focus{ outline:none; }
+.custom input::-webkit-outer-spin-button,.custom input::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+.custom input[type=number]{ -moz-appearance:textfield; }
+
+.panel .btn{ width:100%; margin-top:1.25rem; }
+.panel .smallprint{ margin-top:1rem; font-size:.8125rem; color:var(--ink-3); line-height:1.55; }
+.panel .smallprint a{ color:var(--ink-2); }
+.err{ margin-top:.9rem; font-size:.875rem; color:var(--quiet); min-height:1.4em; }
+
+/* ── footer ───────────────────────────────────────────────────────────── */
+footer{ border-top:1px solid var(--rule); padding:2.5rem 0 3.5rem; font-size:.875rem; color:var(--ink-3); }
+.foot-row{ display:flex; flex-wrap:wrap; gap:.65rem 1.5rem; align-items:center; }
+footer a{ color:var(--ink-2); text-decoration:none; text-underline-offset:3px; }
+footer a:hover{ text-decoration:underline; color:var(--ink); }
+@media (min-width:56rem){ .foot-row .sep{ margin-left:auto; } }
+
+/* ── entrance, once, quietly ──────────────────────────────────────────── */
+@media (prefers-reduced-motion:no-preference){
+  .rise{ opacity:0; transform:translateY(14px); }
+  .rise.in{ opacity:1; transform:none; transition:opacity .7s var(--ease), transform .7s var(--ease); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <a class="mark" href="/"><img src="/img/icon.webp" alt="" width="28" height="28"> Mutify</a>
+    <nav>
+      <a href="#decide">How it decides</a>
+      <a href="https://github.com/Schmedu/mutify">Source</a>
+      <a class="btn btn-quiet ghost" href="#buy">Get it — €0.99</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <h1 class="rise">Your Mac goes <em class="quiet-word">quiet</em> where sound isn't welcome.</h1>
+      <p class="lede rise">Mutify sets the output volume to zero on any Wi-Fi you haven't allowed — and puts it back when you're home.</p>
+      <div class="cta-row rise">
+        <a class="btn btn-accent" href="#buy">Get Mutify — €0.99</a>
+        <a class="btn btn-quiet" href="#decide">See how it decides</a>
+      </div>
+      <p class="cta-note rise">macOS 14 or later, Apple Silicon. Signed and notarized — no Gatekeeper detour. No account, no analytics, no updater.</p>
+    </div>
+
+    <figure class="shot-float rise">
+      <div class="shot-stage"><img src="/img/menu.webp" alt="Mutify's menu bar menu, reading “Muted — Café Kollektiv isn't on your allow list”, above options to allow sound for 15 minutes, 30 minutes, an hour, until tomorrow morning, or until you leave this network." width="978" height="710" fetchpriority="high"></div>
+      <figcaption>The whole app, most days: what it's doing, why, and five ways out of it.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section class="decide" id="decide">
+  <div class="wrap">
+    <div class="decide-head">
+      <p class="eyebrow rise">The rule</p>
+      <h2 class="rise">One decision, made the same way every time.</h2>
+      <p class="rise">Mutify mutes when the sound would come out of speakers the room can hear, on a network you haven't vouched for. That's the whole of it. Change either half below and watch the verdict move.</p>
+    </div>
+
+    <div class="console rise">
+      <div class="picks">
+        <div class="pick">
+          <p class="eyebrow" id="lbl-net">Where you are</p>
+          <div class="opts" role="group" aria-labelledby="lbl-net" id="nets"></div>
+        </div>
+        <div class="pick">
+          <p class="eyebrow" id="lbl-out">What sound comes out of</p>
+          <div class="opts" role="group" aria-labelledby="lbl-out" id="outs"></div>
+        </div>
+      </div>
+
+      <div class="verdict" id="verdict">
+        <div>
+          <p class="verdict-state"><span class="dot"></span><span id="state-label">Muted</span></p>
+          <h3 id="state-head">Silence.</h3>
+          <p class="because" id="because" aria-live="polite"></p>
+          <p class="escapes" id="escapes" hidden></p>
+        </div>
+        <div class="meter">
+          <div class="meter-row"><span>Output volume</span><b id="vol-num">0%</b></div>
+          <div class="meter-track"><div class="meter-fill" id="vol-fill"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="detail">
+  <div class="wrap detail-grid">
+    <div class="detail-copy">
+      <p class="eyebrow rise">Headphones</p>
+      <h2 class="rise">Never touched.</h2>
+      <p class="rise">If the sound is going into your ears, nobody else can hear it, so there is nothing to mute. AirPods, a USB headset, anything in the jack — Mutify leaves them alone in the library, in the café, anywhere.</p>
+      <p class="rise">Everything else is classified for you: built-in speakers and a monitor over HDMI count as room-audible. Odd virtual and USB devices get a row on the Devices tab, and you decide.</p>
+    </div>
+    <figure class="rise">
+      <img src="/img/devices.webp" alt="Mutify's Devices tab listing AirPods Pro, MacBook Pro Speakers, a Scarlett Solo USB interface and a Studio Display, each set to Automatic or Speakers." width="1240" height="960" loading="lazy">
+    </figure>
+  </div>
+</section>
+
+<section class="detail">
+  <div class="wrap detail-grid flip">
+    <div class="detail-copy">
+      <p class="eyebrow rise">Two lists</p>
+      <h2 class="rise">Deny wins.</h2>
+      <p class="rise">Put the networks where sound is fine on the allow list. Put the ones where it never is — the library, the office, an airport — on the mute list. When a network is somehow on both, the mute list wins.</p>
+      <ul class="list rise">
+        <li><span class="k">On the allow list</span><span class="v">Sound allowed</span></li>
+        <li><span class="k">On the mute list</span><span class="v">Muted</span></li>
+        <li><span class="k">On neither, or no network</span><span class="v">Your call — muted by default</span></li>
+        <li><span class="k">Nothing identifies it</span><span class="v">Stands down, with a warning</span></li>
+      </ul>
+      <p class="rise">That last row matters: Mutify never mutes on a guess.</p>
+    </div>
+    <figure class="rise">
+      <img src="/img/networks.webp" alt="Mutify's Networks tab: an allow list holding Home and Studio 4B, a mute list holding Library Public and Airport Free WiFi, and the networks you've been on below." width="1240" height="1412" loading="lazy">
+    </figure>
+  </div>
+</section>
+
+<section class="detail">
+  <div class="wrap detail-grid">
+    <div class="detail-copy">
+      <p class="eyebrow rise">Getting out of it</p>
+      <h2 class="rise">Five ways to say “not now”.</h2>
+      <p class="rise">Allow sound for fifteen minutes, half an hour, an hour, until tomorrow morning, or until you leave this network — plus an indefinite pause for the days you just want it to stop.</p>
+      <p class="rise">A volume Mutify lowered is put back when sound is allowed again, on the device it lowered, and only if you haven't changed it yourself in the meantime.</p>
+    </div>
+    <figure class="rise">
+      <img src="/img/general.webp" alt="Mutify's General settings pane on a Mac joined to a café network, reading “Muted — Café Kollektiv isn't on your allow list”, with buttons to allow sound for 15 minutes or an hour." width="1240" height="1576" loading="lazy">
+    </figure>
+  </div>
+</section>
+
+<section class="statement">
+  <div class="wrap">
+    <p class="eyebrow rise">Privacy</p>
+    <blockquote class="rise">Nothing about your location or your networks <em>ever leaves the machine.</em></blockquote>
+    <p class="foot rise">There is no account, no server and no analytics — there's nowhere for any of it to go. macOS won't hand out Wi-Fi names without Location access, so Mutify identifies a network by its router's hardware address instead, which needs no permission at all and tells two cafés called FRITZ!Box apart. Grant Location access and you get the real names too.</p>
+  </div>
+</section>
+
+<section class="buy" id="buy">
+  <div class="wrap buy-grid">
+    <div>
+      <p class="eyebrow rise">The price</p>
+      <h2 class="rise">Ninety-nine cents is the floor, not the price.</h2>
+      <p class="pitch rise">Mutify is MIT-licensed and the DMG sits on a public GitHub release — you can have it for nothing, and that's fine. Paying is how you tell me it was worth building. Pay the floor, or pay what one saved moment was actually worth to you.</p>
+      <ul class="list rise">
+        <li><span class="k">One-off</span><span class="v">No subscription, no upgrade fee</span></li>
+        <li><span class="k">Requires</span><span class="v">macOS 14+, Apple Silicon</span></li>
+        <li><span class="k">Size</span><span class="v">A 1&nbsp;MB DMG, signed and notarized</span></li>
+        <li><span class="k">Refunds</span><span class="v">Email me, no questions</span></li>
+      </ul>
+    </div>
+
+    <div class="panel rise">
+      <p class="eyebrow">Choose your price</p>
+      <div class="amounts" role="group" aria-label="Choose an amount" id="amounts"></div>
+
+      <label class="custom" for="custom-amount">
+        <span>€</span>
+        <input id="custom-amount" type="number" inputmode="decimal" min="0.99" max="500" step="0.01" placeholder="Something else" aria-label="A different amount in euros">
+      </label>
+
+      <button class="btn btn-accent" id="pay" type="button">Pay €0.99 and download</button>
+      <p class="err" id="err" role="alert"></p>
+
+      <p class="smallprint">Card, Apple&nbsp;Pay, Google&nbsp;Pay and Link, handled by Stripe — the card never touches this site. VAT included. The download starts the moment the payment clears, which means you're waiving the 14-day right of withdrawal; the no-questions refund stands anyway. <a href="/legal">Terms and imprint</a>.</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap foot-row">
+    <span>Mutify — made in Berlin by <a href="https://schmedu.com">Eduard Uffelmann</a></span>
+    <span class="sep"><a href="https://github.com/Schmedu/mutify">Source &amp; free download</a></span>
+    <span><a href="https://github.com/Schmedu/mutify/blob/main/PRD.md">Why it works this way</a></span>
+    <span><a href="/legal">Imprint</a></span>
+  </div>
+</footer>
+
+<script type="module">
+// ── the decision, the same shape the app uses ──────────────────────────────
+const NETWORKS = [
+  { id:'home',    name:'Home',              tag:'Allow list',   list:'allow' },
+  { id:'cafe',    name:'Café Kollektiv',    tag:'Neither list', list:'unknown' },
+  { id:'library', name:'Library Public',    tag:'Mute list',    list:'deny' },
+  { id:'none',    name:'No Wi-Fi at all',   tag:'Offline',      list:'unknown' },
+];
+
+const OUTPUTS = [
+  { id:'airpods',  name:'AirPods Pro',          tag:'Headphones', audible:false },
+  { id:'speakers', name:'MacBook Pro Speakers', tag:'Room',       audible:true },
+  { id:'display',  name:'Studio Display',       tag:'Room',       audible:true },
+];
+
+/**
+ * Mute exactly when the sound is room-audible AND the network isn't vouched
+ * for — with the mute list overriding the allow list, and headphones exempt.
+ */
+function decide(net, out) {
+  if (!out.audible) {
+    return { muted:false, head:'Sound stays on.',
+      because:`${out.name} is yours alone, so there is nothing for the room to overhear. Mutify never touches headphones — not in a library, not anywhere.` };
+  }
+  if (net.list === 'deny') {
+    return { muted:true, head:'Silence.',
+      because:`“${net.name}” is on your mute list, and deny always wins. ${out.name} goes to zero the moment you join.` };
+  }
+  if (net.list === 'allow') {
+    return { muted:false, head:'Sound stays on.',
+      because:`“${net.name}” is on your allow list, so ${out.name} is left exactly where you had it.` };
+  }
+  if (net.id === 'none') {
+    return { muted:true, head:'Silence.',
+      because:`There's no network to recognise, and unknown means mute unless you say otherwise. Anything you had playing out of ${out.name} stops being everyone's problem.` };
+  }
+  return { muted:true, head:'Silence.',
+    because:`“${net.name}” isn't on your allow list, and unknown networks are set to mute. ${out.name} drops to zero — and comes back up when you're home.` };
+}
+
+let netId = 'cafe';
+let outId = 'speakers';
+
+function option(item, group, selected) {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'opt';
+  b.setAttribute('aria-pressed', String(item.id === selected));
+  b.dataset.id = item.id;
+  b.innerHTML = `<span>${item.name}</span><span class="tag">${item.tag}</span>`;
+  b.addEventListener('click', () => {
+    if (group === 'net') netId = item.id; else outId = item.id;
+    render();
+  });
+  return b;
+}
+
+const netBox = document.getElementById('nets');
+const outBox = document.getElementById('outs');
+const fill = document.getElementById('vol-fill');
+const volNum = document.getElementById('vol-num');
+const verdict = document.getElementById('verdict');
+const stateLabel = document.getElementById('state-label');
+const stateHead = document.getElementById('state-head');
+const because = document.getElementById('because');
+
+function render() {
+  netBox.replaceChildren(...NETWORKS.map((n) => option(n, 'net', netId)));
+  outBox.replaceChildren(...OUTPUTS.map((o) => option(o, 'out', outId)));
+
+  const net = NETWORKS.find((n) => n.id === netId);
+  const out = OUTPUTS.find((o) => o.id === outId);
+  const v = decide(net, out);
+
+  verdict.style.setProperty('--state', v.muted ? 'var(--quiet)' : 'var(--live)');
+  stateLabel.textContent = v.muted ? 'Muted' : 'Sound allowed';
+  stateHead.textContent = v.head;
+  because.textContent = v.because;
+
+  const escapes = document.getElementById('escapes');
+  escapes.hidden = !v.muted;
+  if (v.muted) {
+    escapes.innerHTML = 'One click gets it back: <b>15 minutes</b>, <b>an hour</b>, <b>until tomorrow morning</b>, or <b>until you leave this network</b>.';
+  }
+
+  const vol = v.muted ? 0 : 0.62;
+  fill.style.setProperty('--vol', String(vol));
+  volNum.textContent = `${Math.round(vol * 100)}%`;
+}
+render();
+
+// ── choose your price ──────────────────────────────────────────────────────
+const PRESETS = [
+  { cents: 99,   label:'€0.99', note:'the floor' },
+  { cents: 300,  label:'€3',    note:'' },
+  { cents: 700,  label:'€7',    note:'' },
+  { cents: 1500, label:'€15',   note:'generous' },
+];
+const MIN = 99;
+
+let amount = 99;
+const amountBox = document.getElementById('amounts');
+const customInput = document.getElementById('custom-amount');
+const payBtn = document.getElementById('pay');
+const errBox = document.getElementById('err');
+
+const euros = (c) => (c / 100).toLocaleString('en-IE', { style:'currency', currency:'EUR' });
+
+function paintAmounts() {
+  amountBox.replaceChildren(...PRESETS.map((p) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'amount';
+    b.setAttribute('aria-pressed', String(p.cents === amount));
+    b.innerHTML = p.note ? `${p.label}<small>${p.note}</small>` : p.label;
+    b.addEventListener('click', () => {
+      amount = p.cents;
+      customInput.value = '';
+      errBox.textContent = '';
+      paintAmounts();
+    });
+    return b;
+  }));
+  payBtn.textContent = `Pay ${euros(amount)} and download`;
+}
+paintAmounts();
+
+customInput.addEventListener('input', () => {
+  const cents = Math.round(Number(customInput.value.replace(',', '.')) * 100);
+  if (Number.isFinite(cents) && cents >= MIN) {
+    amount = cents;
+    errBox.textContent = '';
+  }
+  paintAmounts();
+});
+
+payBtn.addEventListener('click', async () => {
+  const typed = customInput.value.trim();
+  if (typed) {
+    const cents = Math.round(Number(typed.replace(',', '.')) * 100);
+    if (!Number.isFinite(cents) || cents < MIN) {
+      errBox.textContent = 'The floor is €0.99 — pick that or more.';
+      customInput.focus();
+      return;
+    }
+    amount = cents;
+  }
+
+  payBtn.disabled = true;
+  const was = payBtn.textContent;
+  payBtn.textContent = 'Opening Stripe…';
+  errBox.textContent = '';
+
+  try {
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.url) throw new Error(data.error ?? 'Checkout would not open.');
+    window.location.href = data.url;
+  } catch (e) {
+    errBox.textContent = `${e.message} If it keeps happening, grab it free from GitHub.`;
+    payBtn.disabled = false;
+    payBtn.textContent = was;
+  }
+});
+
+// ── a header rule that appears only once you've left the top ───────────────
+const hdr = document.querySelector('header');
+const onScroll = () => hdr.classList.toggle('scrolled', window.scrollY > 8);
+onScroll();
+addEventListener('scroll', onScroll, { passive: true });
+
+// ── one quiet entrance ─────────────────────────────────────────────────────
+if (matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+  const io = new IntersectionObserver((entries) => {
+    for (const e of entries) {
+      if (!e.isIntersecting) continue;
+      const row = e.target.parentElement?.querySelectorAll?.('.rise') ?? [e.target];
+      e.target.style.transitionDelay = `${Math.min([...row].indexOf(e.target), 5) * 70}ms`;
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    }
+  }, { rootMargin: '0px 0px -8% 0px' });
+  document.querySelectorAll('.rise').forEach((el) => io.observe(el));
+}
+</script>
+</body>
+</html>
