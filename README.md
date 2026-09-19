@@ -34,11 +34,37 @@ lowered it on, and only if you haven't changed it yourself in the meantime.
 ```sh
 ./Scripts/build.sh            # builds build/Mutify.app
 ./Scripts/build.sh --install  # …and moves it to /Applications and launches it
+./Scripts/build.sh --release  # …signed, notarized and stapled: a DMG others can run
 swift test                    # the decision engine's test suite
 ```
 
-It signs with a Developer ID certificate if you have one, otherwise a
-development certificate, otherwise ad-hoc.
+Everyday builds sign with a Developer ID certificate if you have one, otherwise
+a development certificate, otherwise ad-hoc. The last two run only on the Mac
+that built them — Gatekeeper refuses them everywhere else, which is what
+`--release` exists to avoid.
+
+`--release` needs two things, and checks for both before it compiles anything:
+
+- a **Developer ID Application** certificate (paid Apple Developer Program:
+  Xcode ▸ Settings ▸ Accounts ▸ Manage Certificates ▸ + );
+- notary credentials in the keychain, stored once with
+
+  ```sh
+  xcrun notarytool store-credentials mutify-notary \
+    --apple-id <apple id> --team-id <team id> --password <app-specific password>
+  ```
+
+  (`MUTIFY_NOTARY_PROFILE=<name>` to use a different profile.)
+
+It then signs with the hardened runtime and a secure timestamp, notarizes the
+app, staples the ticket into the app *and* into the disk image — so a Mac that
+is offline on first launch still gets a verdict — and leaves
+`build/Mutify-<version>.dmg` and a matching `.zip` behind, each checked with
+`spctl` the way another Mac will check them. `VERSION=1.1 ./Scripts/build.sh
+--release` sets the marketing version; the build number is the commit count.
+
+The binary is arm64 only, so it needs an Apple Silicon Mac, and macOS 14 or
+newer.
 
 ## If the menu bar icon doesn't appear
 

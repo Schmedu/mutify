@@ -351,6 +351,29 @@ given a label by the user.
 
 Location access is now an enhancement (friendly names), not a requirement.
 
+## 14b. Addendum — how it actually builds (2026-09-19)
+
+§14 described an intention; this is the shape it took.
+
+- **SwiftPM, not an Xcode project.** `Scripts/build.sh` compiles with `swift
+  build` and assembles the bundle, Info.plist and icon by hand. Nothing about
+  the app needs Xcode's build system, and a shell script is readable.
+- **Minimum target macOS 14**, not 26 — nothing in the app requires anything
+  newer, and raising the floor only costs users. arm64 only; a universal binary
+  is one flag away (`--arch arm64 --arch x86_64`) if an Intel Mac ever asks.
+- **No App Sandbox.** With App Store distribution a non-goal (§3), the sandbox
+  buys nothing here: Developer ID plus notarization is what Gatekeeper asks for,
+  and the app reads the default gateway's hardware address, which the sandbox
+  would complicate for no gain. Hardened runtime is on, as notarization requires.
+- **`--release` does the whole chain**: Developer ID signature with a secure
+  timestamp, notarization, and the ticket stapled into both the app and the DMG,
+  so a Mac that is offline the first time it opens Mutify still gets a verdict.
+  It refuses before compiling when the certificate or the notary credentials
+  aren't there, rather than producing a build that only runs on this Mac.
+
+Still missing before handing it to anyone: a licence, and some way to update —
+every new version is currently a manual download.
+
 ## 15. Open questions
 
 1. **Default enforcement mode** — this PRD picks "On change" as the default for
