@@ -473,6 +473,14 @@ private struct AboutTab: View {
                 .frame(maxWidth: 380)
                 .foregroundStyle(.secondary)
             Spacer()
+            // With the menu bar icon switched off, this is the only Quit that
+            // isn't a keyboard shortcut.
+            Button("Quit Mutify") { NSApplication.shared.terminate(nil) }
+            Text("Quitting doesn't put the volume back on its own — Mutify restores what it lowered the next time it starts somewhere sound is allowed.")
+                .font(.caption)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 380)
+                .foregroundStyle(.secondary)
         }
         .padding(32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
