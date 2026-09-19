@@ -8,7 +8,7 @@ struct MutifyApp: App {
     @State private var state = AppState()
 
     var body: some Scene {
-        MenuBarExtra {
+        MenuBarExtra(isInserted: $state.settings.showMenuBarIcon) {
             MenuContent(state: state)
         } label: {
             Image(nsImage: MenuBarIcon.image(named: state.statusSymbol))

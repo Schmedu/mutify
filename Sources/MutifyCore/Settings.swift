@@ -28,6 +28,10 @@ public struct Settings: Codable, Equatable, Sendable {
     /// Device UID → last known name, for the Devices tab.
     public var seenDevices: [String: String]
     public var hasCompletedOnboarding: Bool
+    /// The menu bar icon is Mutify's only visible surface, so it's on by
+    /// default — but it's a spot in a crowded bar, and the app runs just as
+    /// well without it. Opening Mutify again brings the window back.
+    public var showMenuBarIcon: Bool
 
     public init(
         schemaVersion: Int = Settings.currentSchemaVersion,
@@ -44,7 +48,8 @@ public struct Settings: Codable, Equatable, Sendable {
         seenNetworks: [String] = [],
         networkLabels: [String: String] = [:],
         seenDevices: [String: String] = [:],
-        hasCompletedOnboarding: Bool = false
+        hasCompletedOnboarding: Bool = false,
+        showMenuBarIcon: Bool = true
     ) {
         self.schemaVersion = schemaVersion
         self.masterEnabled = masterEnabled
@@ -61,6 +66,7 @@ public struct Settings: Codable, Equatable, Sendable {
         self.networkLabels = networkLabels
         self.seenDevices = seenDevices
         self.hasCompletedOnboarding = hasCompletedOnboarding
+        self.showMenuBarIcon = showMenuBarIcon
     }
 
     // Hand-written so that a key added in a future version — or removed in an
@@ -83,6 +89,7 @@ public struct Settings: Codable, Equatable, Sendable {
         networkLabels = try c.decodeIfPresent([String: String].self, forKey: .networkLabels) ?? d.networkLabels
         seenDevices = try c.decodeIfPresent([String: String].self, forKey: .seenDevices) ?? d.seenDevices
         hasCompletedOnboarding = try c.decodeIfPresent(Bool.self, forKey: .hasCompletedOnboarding) ?? d.hasCompletedOnboarding
+        showMenuBarIcon = try c.decodeIfPresent(Bool.self, forKey: .showMenuBarIcon) ?? d.showMenuBarIcon
     }
 
     // MARK: - List helpers

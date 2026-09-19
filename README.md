@@ -52,6 +52,10 @@ brings up its window**, and every control from the menu is also in that window,
 so the app stays fully usable either way. To get the icon back, quit a menu bar
 app or install a menu bar manager such as Ice.
 
+The icon can also be turned off on purpose — *General ▸ Show the icon in the
+menu bar*. Mutify keeps muting without it; opening the app again is then the way
+back to its window.
+
 ## How Mutify tells networks apart
 
 The obvious answer is the Wi-Fi name, and macOS won't give it up. Since macOS 14

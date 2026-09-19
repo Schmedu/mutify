@@ -137,6 +137,12 @@ private struct GeneralTab: View {
 
             Section("System") {
                 Toggle("Notify me when Mutify mutes", isOn: $state.settings.notifyOnMute)
+                Toggle("Show the icon in the menu bar", isOn: $state.settings.showMenuBarIcon)
+                if !state.settings.showMenuBarIcon {
+                    Text("Mutify keeps muting without it. Open Mutify again — from Applications or Spotlight — to bring this window back.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 Toggle("Launch at login", isOn: Binding(
                     get: { state.loginItemEnabled },
                     set: { state.setLoginItem($0) }
