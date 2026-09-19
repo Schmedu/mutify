@@ -5,6 +5,14 @@ somewhere sound isn't welcome and the sound would come out of speakers the room
 can hear. Headphones are never touched. See [PRD.md](PRD.md) for the reasoning
 behind every rule.
 
+## Download
+
+[Releases](https://github.com/Schmedu/mutify/releases) — a signed, notarized DMG
+for Apple Silicon, macOS 14 or newer. Drag it to Applications. No installer and
+no updater: a new version is a new download.
+
+*(No release posted yet — until then, build it yourself: `./Scripts/build.sh --install`.)*
+
 ## How it decides
 
 ```
