@@ -74,6 +74,13 @@ is offline on first launch still gets a verdict — and leaves
 The binary is arm64 only, so it needs an Apple Silicon Mac, and macOS 14 or
 newer.
 
+Posting the result:
+
+```sh
+gh release upload v1.0 build/Mutify-1.0.dmg build/Mutify-1.0.zip
+gh release edit v1.0 --draft=false
+```
+
 ## If the menu bar icon doesn't appear
 
 macOS parks new menu bar items to the left of the notch when the bar is full, in
