@@ -9,11 +9,10 @@ behind every rule.
 
 ## Download
 
-[Releases](https://github.com/Schmedu/mutify/releases) — a signed, notarized DMG
-for Apple Silicon, macOS 14 or newer. Drag it to Applications. No installer and
-no updater: a new version is a new download.
-
-*(No release posted yet — until then, build it yourself: `./Scripts/build.sh --install`.)*
+[**Mutify 1.0**](https://github.com/Schmedu/mutify/releases/latest) — a signed,
+notarized DMG for Apple Silicon, macOS 14 or newer. Drag it to Applications; it
+opens without a Gatekeeper detour. No installer and no updater: a new version is
+a new download.
 
 ## How it decides
 
