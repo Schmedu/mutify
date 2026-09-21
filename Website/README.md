@@ -5,8 +5,7 @@ over the DMG. Static HTML with no build step and no dependencies — `public/` i
 served as-is, `api/` runs on Vercel's Node runtime.
 
 ```
-public/index.html   the landing page (styles and script inline, one request)
-public/drawn.html   the same page, hand-drawn and animated — served at /drawn
+public/index.html   the landing page, hand-drawn and animated (styles and script inline)
 public/thanks.html  where Stripe sends people afterwards
 public/legal.html   imprint, withdrawal, VAT, privacy
 public/_shared.css  the design tokens the two small pages share
@@ -51,23 +50,18 @@ The same DMG is a free public download on that release. That is deliberate.
 
 ## The hero
 
-`public/img/room.webp` is a generated coworking-space image (`Marketing/07-room.jpg`
-is the full-size original) — not a photograph of anywhere real. The card sitting
-on it is: `public/img/status.webp` is the top two rows cropped straight out of
-`Marketing/screenshots/05-menu.png`, so the words in the hero are the words the
-app actually prints.
+The page is drawn as an inked cartoon, and the hero plays one 8-second loop:
+the laptop opens on an unknown café Wi-Fi, starts to sing, gets a Mutify sticker
+slapped on before the chorus, zips its mouth, and the notes drop. It is all
+inline SVG animated with CSS — no images, no libraries. Every part has its own
+`@keyframes` over the same 8 s, so the percentages line up as one timeline.
+The shiver on every line is one shared `feTurbulence` filter whose seed steps a
+few times a second.
 
-## The drawn cut
+With reduced motion the loops and the line boil stop, and the hero rests on its
+last frame: muted, sticker on.
 
-`/drawn` carries the same words and the same checkout as `/`, redrawn as an
-inked cartoon: the hero laptop opens, starts to sing, gets a Mutify sticker
-slapped on before the chorus, and the notes drop. Everything is inline SVG
-animated with CSS — no images, no libraries. The shiver on every line is one
-shared `feTurbulence` filter whose seed steps a few times a second.
-
-It is `noindex` with a canonical pointing at `/`, and isn't in the sitemap, so
-the two pages never compete in search. With reduced motion the loops and the
-line boil stop, and the hero rests on its last frame: muted, sticker on.
+`/drawn` was this page's address before it became the homepage, and 308s to `/`.
 
 ## Domains
 
