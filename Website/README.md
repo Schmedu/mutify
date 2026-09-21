@@ -6,6 +6,7 @@ served as-is, `api/` runs on Vercel's Node runtime.
 
 ```
 public/index.html   the landing page (styles and script inline, one request)
+public/drawn.html   the same page, hand-drawn and animated — served at /drawn
 public/thanks.html  where Stripe sends people afterwards
 public/legal.html   imprint, withdrawal, VAT, privacy
 public/_shared.css  the design tokens the two small pages share
@@ -55,6 +56,18 @@ is the full-size original) — not a photograph of anywhere real. The card sitti
 on it is: `public/img/status.webp` is the top two rows cropped straight out of
 `Marketing/screenshots/05-menu.png`, so the words in the hero are the words the
 app actually prints.
+
+## The drawn cut
+
+`/drawn` carries the same words and the same checkout as `/`, redrawn as an
+inked cartoon: the hero laptop opens, starts to sing, gets a Mutify sticker
+slapped on before the chorus, and the notes drop. Everything is inline SVG
+animated with CSS — no images, no libraries. The shiver on every line is one
+shared `feTurbulence` filter whose seed steps a few times a second.
+
+It is `noindex` with a canonical pointing at `/`, and isn't in the sitemap, so
+the two pages never compete in search. With reduced motion the loops and the
+line boil stop, and the hero rests on its last frame: muted, sticker on.
 
 ## Domains
 
