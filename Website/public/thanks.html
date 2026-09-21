@@ -8,45 +8,212 @@
 <link rel="icon" href="/favicon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..600;1,6..72,200..500&family=Karla:wght@300..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=Shantell+Sans:ital,wght,BNCE,INFM@0,300..800,-100..100,0..100&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/_shared.css">
-<meta name="theme-color" content="#f7f6fb" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#16151f" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#d9d8ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1a2b" media="(prefers-color-scheme: dark)">
+<script>
+  try {
+    const t = localStorage.getItem('mutify-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+  } catch {}
+</script>
 <style>
-  .state{min-height:16rem}
-  .lede{margin-top:1.5rem;font-size:1.1875rem;color:var(--ink-2);max-width:44ch;line-height:1.5}
-  .actions{margin-top:2.25rem;display:flex;flex-wrap:wrap;gap:.75rem;align-items:center}
-  .receipt{margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid var(--rule);
-    display:grid;gap:.6rem;font-size:.9375rem;max-width:34rem}
-  .receipt div{display:flex;justify-content:space-between;gap:1.5rem}
-  .receipt dt{color:var(--ink-3)}
-  .receipt dd{margin:0;font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
-  .next{margin-top:2.5rem;padding-top:1.5rem;border-top:1px solid var(--rule)}
-  .next ol{margin:1rem 0 0;padding-left:1.15rem;display:grid;gap:.6rem;color:var(--ink-2);max-width:46ch}
-  .next li::marker{color:var(--ink-3);font-variant-numeric:tabular-nums}
-  .hint{margin-top:1.25rem;font-size:.875rem;color:var(--ink-3);max-width:46ch;line-height:1.55}
-  .spin{display:inline-block;width:.85rem;height:.85rem;border-radius:50%;
-    border:2px solid var(--rule);border-top-color:var(--ink-3);animation:spin .7s linear infinite;vertical-align:-1px}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  @media (prefers-reduced-motion:reduce){.spin{animation-duration:2s}}
+  body{ --page:64rem; }
+  .stage{ display:grid; gap:clamp(1.5rem,4vw,3.5rem); align-items:center; }
+  @media (min-width:56rem){
+    .stage{ grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr); align-items:start; }
+    .pal{ position:sticky; top:3rem; margin-top:2.5rem !important; }
+  }
+  .pal{ margin:0; width:min(100%, 24rem); justify-self:center; }
+  @media (max-width:55.99rem){ .pal{ order:-1; width:min(72%, 17rem); } }
+
+  .state{ min-height:16rem; }
+  .state h1{ margin-top:1.1rem; }
+  .lede{ margin-top:1.4rem; font-size:clamp(1.125rem,1.05rem + .35vw,1.3rem); color:var(--ink-2); max-width:42ch; line-height:1.5; }
+  .actions{ margin-top:2rem; display:flex; flex-wrap:wrap; gap:1rem; align-items:center; }
+
+  /* the receipt, a slip of paper */
+  .receipt{ margin:2.5rem 0 0; padding:1.1rem 1.4rem; max-width:30rem; rotate:.6deg; font-size:.9375rem; }
+  .receipt div{ display:flex; justify-content:space-between; gap:1.5rem; padding:.55rem 0;
+    background:linear-gradient(90deg, color-mix(in oklab, var(--line) 30%, transparent) 50%, transparent 0) 0 100% / 10px 2px repeat-x; }
+  .receipt div:last-child{ background:none; }
+  .receipt dt{ color:var(--ink-3); font-family:var(--hand); font-weight:600; }
+  .receipt dd{ margin:0; font-weight:700; font-variant-numeric:tabular-nums; text-align:right; }
+
+  .next{ margin-top:2.75rem; }
+  .next ol{ margin:1.1rem 0 0; padding:0; list-style:none; display:grid; gap:.8rem; color:var(--ink-2); max-width:46ch; counter-reset:step; }
+  .next li{ display:grid; grid-template-columns:2rem 1fr; align-items:baseline; }
+  .next li::before{ counter-increment:step; content:counter(step) "."; font-family:var(--hand); font-weight:800; font-size:1.2rem;
+    color:var(--noise); font-variation-settings:"INFM" 80, "BNCE" 50; }
+  .hint{ margin-top:1.4rem; font-size:.9rem; color:var(--ink-3); max-width:46ch; line-height:1.55; }
+
+  /* a hand-drawn loop that keeps going round while Stripe is asked */
+  .spin{ width:1.05em; height:1.05em; vertical-align:-.18em; margin-right:.2em; fill:none; stroke:currentColor; stroke-width:3; stroke-linecap:round;
+    animation:spin .9s linear infinite; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  /* the laptop's face follows the page: waiting, paid, or puzzled */
+  .pal .f-yay, .pal .f-huh, .pal .yay, .pal .huh{ opacity:0; }
+  body[data-state="paid"] .pal .f-wait, body[data-state="fail"] .pal .f-wait, body[data-state="paid"] .pal .wait, body[data-state="fail"] .pal .wait{ opacity:0; }
+  body[data-state="paid"] .pal .f-yay, body[data-state="paid"] .pal .yay{ opacity:1; }
+  body[data-state="fail"] .pal .f-huh, body[data-state="fail"] .pal .huh{ opacity:1; }
+  .pal .sticker{ transform:scale(2.4) rotate(-24deg); }
+  body[data-state="paid"] .pal .sticker{ transform:none; transition:transform .32s cubic-bezier(.55,0,1,.45); }
+  @media (prefers-reduced-motion:no-preference){
+    .pal .look{ animation:look 2.2s ease-in-out infinite; }
+    @keyframes look{ 0%,100%{ transform:translate(-6px,0); } 45%,55%{ transform:translate(6px,0); } }
+    .pal .dots circle{ animation:dot 1.2s ease-in-out infinite; }
+    .pal .dots circle:nth-child(2){ animation-delay:.2s; }
+    .pal .dots circle:nth-child(3){ animation-delay:.4s; }
+    @keyframes dot{ 0%,60%,100%{ transform:translateY(0); } 30%{ transform:translateY(-7px); } }
+    body[data-state="paid"] .pal .spark{ animation:twinkle 1.6s ease-in-out infinite; }
+    body[data-state="paid"] .pal .spark.s2{ animation-delay:.5s; }
+    body[data-state="paid"] .pal .spark.s3{ animation-delay:1s; }
+    @keyframes twinkle{ 0%,100%{ transform:scale(.6) rotate(0); opacity:.4; } 50%{ transform:scale(1.1) rotate(20deg); opacity:1; } }
+  }
+  @media (prefers-reduced-motion:reduce){ .spin{ animation-duration:2.4s; } }
 </style>
 </head>
-<body>
+<body data-state="wait">
 
-<header><div class="wrap bar"><a class="mark" href="/"><img src="/img/icon.webp" alt="" width="28" height="28"> Mutify</a></div></header>
+<svg class="defs" aria-hidden="true" focusable="false">
+  <filter id="boil" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="1" seed="3" result="n">
+      <animate attributeName="seed" values="3;8;14;21;27" dur=".62s" calcMode="discrete" repeatCount="indefinite"/>
+    </feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="3" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
 
-<main><div class="wrap state" id="state">
-  <p class="eyebrow"><span class="spin"></span> Checking your receipt</p>
-  <h1 style="margin-top:1.25rem">One moment.</h1>
+<header>
+  <div class="wrap bar">
+    <a class="mark" href="/"><img src="/img/icon.webp" alt="" width="30" height="30"> Mutify</a>
+    <button class="theme" id="theme" type="button" aria-label="Switch between light and dark">
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.5Z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>
+    </button>
+  </div>
+  <div class="rule" aria-hidden="true"></div>
+</header>
+
+<main><div class="wrap stage">
+  <div class="state" id="state">
+    <p class="eyebrow"><svg class="spin" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5 A8.5 8.5 0 1 1 4 9"/></svg>Checking your receipt</p>
+    <h1>One moment.</h1>
+  </div>
+
+  <figure class="pal" aria-hidden="true">
+    <svg class="art" viewBox="60 20 540 420">
+      <g filter="url(#boil)">
+        <g transform="rotate(4 320 300)">
+          <polygon class="sh" points="170,322 490,322 566,404 94,404"/>
+          <polygon class="sh" points="94,404 566,404 558,418 102,418"/>
+          <rect class="sh" x="170" y="102" width="320" height="220" rx="18"/>
+          <rect class="k" x="160" y="90" width="320" height="220" rx="18"/>
+          <rect class="p" x="176" y="106" width="288" height="190" rx="10" stroke-width="4"/>
+          <circle class="p ns" cx="320" cy="98" r="3"/>
+
+          <!-- waiting: eyes going back and forth over the receipt -->
+          <g class="f-wait">
+            <path stroke-width="5" d="M256 166 L288 164 M352 164 L384 166"/>
+            <circle class="w" cx="272" cy="194" r="15" stroke-width="4.5"/>
+            <circle class="w" cx="368" cy="194" r="15" stroke-width="4.5"/>
+            <g class="look">
+              <circle class="k ns" cx="272" cy="196" r="6.5"/>
+              <circle class="k ns" cx="368" cy="196" r="6.5"/>
+            </g>
+            <path stroke-width="5" d="M300 246 H340"/>
+          </g>
+
+          <!-- paid -->
+          <g class="f-yay">
+            <path stroke-width="5" d="M252 160 Q268 150 288 156 M352 156 Q372 150 388 160"/>
+            <path stroke-width="5.5" d="M254 192 Q270 174 286 192 M354 192 Q370 174 386 192"/>
+            <ellipse class="blush" cx="248" cy="216" rx="14" ry="7"/>
+            <ellipse class="blush" cx="392" cy="216" rx="14" ry="7"/>
+            <path class="k" stroke-width="4.5" d="M284 232 Q320 240 356 232 Q352 270 320 272 Q288 270 284 232 Z"/>
+            <path class="c ns" d="M302 262 Q320 250 338 262 Q330 270 320 270 Q310 270 302 262 Z"/>
+          </g>
+
+          <!-- puzzled -->
+          <g class="f-huh">
+            <path stroke-width="5" d="M254 164 Q270 150 288 160 M352 172 L386 170"/>
+            <circle class="w" cx="272" cy="194" r="15" stroke-width="4.5"/>
+            <circle class="k ns" cx="272" cy="194" r="6.5"/>
+            <path stroke-width="5.5" d="M354 196 Q370 190 386 196"/>
+            <path stroke-width="5" d="M290 248 q7.5 -8 15 0 t15 0 t15 0 t15 0"/>
+          </g>
+
+          <polygon class="k" points="160,310 480,310 556,392 84,392"/>
+          <g class="p ns">
+            <polygon points="172,317 192.5,317 187.3,325.2 165.9,325.2"/><polygon points="194.9,317 215.5,317 211.2,325.2 189.8,325.2"/><polygon points="217.9,317 238.5,317 235.1,325.2 213.7,325.2"/><polygon points="240.8,317 261.4,317 259,325.2 237.6,325.2"/><polygon points="263.8,317 284.4,317 282.9,325.2 261.5,325.2"/><polygon points="286.8,317 307.3,317 306.8,325.2 285.4,325.2"/><polygon points="309.7,317 330.3,317 330.7,325.2 309.3,325.2"/><polygon points="332.7,317 353.2,317 354.6,325.2 333.2,325.2"/><polygon points="355.6,317 376.2,317 378.5,325.2 357.1,325.2"/><polygon points="378.6,317 399.2,317 402.4,325.2 381,325.2"/><polygon points="401.5,317 422.1,317 426.3,325.2 404.9,325.2"/><polygon points="424.5,317 445.1,317 450.2,325.2 428.8,325.2"/><polygon points="447.5,317 468,317 474.1,325.2 452.7,325.2"/>
+            <polygon points="163.7,328.2 185.4,328.2 180.2,336.4 157.6,336.4"/><polygon points="187.9,328.2 209.6,328.2 205.3,336.4 182.8,336.4"/><polygon points="212.2,328.2 233.9,328.2 230.5,336.4 208,336.4"/><polygon points="236.4,328.2 258.1,328.2 255.7,336.4 233.2,336.4"/><polygon points="260.6,328.2 282.4,328.2 280.9,336.4 258.3,336.4"/><polygon points="284.9,328.2 306.6,328.2 306.1,336.4 283.5,336.4"/><polygon points="309.1,328.2 330.9,328.2 331.3,336.4 308.7,336.4"/><polygon points="333.4,328.2 355.1,328.2 356.5,336.4 333.9,336.4"/><polygon points="357.6,328.2 379.4,328.2 381.7,336.4 359.1,336.4"/><polygon points="381.9,328.2 403.6,328.2 406.8,336.4 384.3,336.4"/><polygon points="406.1,328.2 427.8,328.2 432,336.4 409.5,336.4"/><polygon points="430.4,328.2 452.1,328.2 457.2,336.4 434.7,336.4"/><polygon points="454.6,328.2 476.3,328.2 482.4,336.4 459.8,336.4"/>
+            <polygon points="155.4,339.4 178.2,339.4 173,347.6 149.3,347.6"/><polygon points="180.9,339.4 203.8,339.4 199.5,347.6 175.8,347.6"/><polygon points="206.4,339.4 229.3,339.4 226,347.6 202.2,347.6"/><polygon points="232,339.4 254.8,339.4 252.4,347.6 228.7,347.6"/><polygon points="257.5,339.4 280.4,339.4 278.9,347.6 255.2,347.6"/><polygon points="283,339.4 305.9,339.4 305.4,347.6 281.7,347.6"/><polygon points="308.6,339.4 331.4,339.4 331.9,347.6 308.1,347.6"/><polygon points="334.1,339.4 357,339.4 358.3,347.6 334.6,347.6"/><polygon points="359.6,339.4 382.5,339.4 384.8,347.6 361.1,347.6"/><polygon points="385.2,339.4 408,339.4 411.3,347.6 387.6,347.6"/><polygon points="410.7,339.4 433.6,339.4 437.8,347.6 414,347.6"/><polygon points="436.2,339.4 459.1,339.4 464.2,347.6 440.5,347.6"/><polygon points="461.8,339.4 484.6,339.4 490.7,347.6 467,347.6"/>
+            <polygon points="147.1,350.6 171.5,350.6 166.3,358.8 141,358.8"/><polygon points="174.3,350.6 198.8,350.6 194.5,358.8 169.2,358.8"/><polygon points="201.5,350.6 234.2,350.6 231.2,358.8 197.4,358.8"/><polygon points="237,350.6 403,350.6 406,358.8 234,358.8"/><polygon points="405.8,350.6 438.5,350.6 442.6,358.8 408.8,358.8"/><polygon points="441.2,350.6 465.7,350.6 470.8,358.8 445.5,358.8"/><polygon points="468.5,350.6 492.9,350.6 499,358.8 473.7,358.8"/>
+          </g>
+          <polygon class="kp" stroke-width="3" points="260.5,366 379.5,366 384.2,386 255.8,386"/>
+          <polygon class="p" points="84,392 556,392 548,406 92,406"/>
+        </g>
+
+        <!-- waiting: a thought bubble of dots -->
+        <g class="wait">
+          <path class="w" stroke-width="4" d="M100 108 Q100 70 140 70 H176 Q212 70 212 104 Q212 136 176 136 H150 L126 156 L132 134 Q100 130 100 108 Z"/>
+          <g class="dots">
+            <circle class="k ns" cx="132" cy="104" r="6"/>
+            <circle class="k ns" cx="156" cy="104" r="6"/>
+            <circle class="k ns" cx="180" cy="104" r="6"/>
+          </g>
+        </g>
+
+        <!-- paid: it's yours, and it's quiet -->
+        <g class="yay">
+          <g transform="translate(488 110) rotate(12)">
+            <g class="sticker">
+              <rect class="sh" x="-44" y="-43" width="100" height="100" rx="26"/>
+              <rect class="m" x="-50" y="-50" width="100" height="100" rx="26"/>
+              <path class="w ns" d="M-29 -11 H-15 L5 -29 V29 L-15 11 H-29 Z"/>
+              <path class="ms" stroke-width="20" d="M-33 -33 L33 33"/>
+              <path class="ws" stroke-width="8.5" d="M-33 -33 L33 33"/>
+            </g>
+          </g>
+          <g transform="translate(128 120)"><path class="spark ln" stroke-width="4.5" d="M0 -22 V22 M-22 0 H22 M-12 -12 L12 12 M-12 12 L12 -12"/></g>
+          <g transform="translate(96 260)"><path class="spark s2 ln" stroke-width="4" d="M0 -15 V15 M-15 0 H15"/></g>
+          <g transform="translate(580 250)"><path class="spark s3 ln" stroke-width="4" d="M0 -15 V15 M-15 0 H15"/></g>
+        </g>
+
+        <!-- puzzled -->
+        <g class="huh">
+          <text class="t-noise" x="120" y="150" font-size="84" text-anchor="middle" transform="rotate(-10 120 150)">?</text>
+        </g>
+      </g>
+    </svg>
+  </figure>
 </div></main>
 
-<footer><div class="wrap foot-row">
-  <span>Trouble? <a href="mailto:e@uffelmann.me">e@uffelmann.me</a></span>
-  <span><a href="https://github.com/Schmedu/mutify">Source</a></span>
-  <span><a href="/legal">Imprint</a></span>
-</div></footer>
+<footer>
+  <div class="rule" aria-hidden="true"></div>
+  <div class="wrap foot-row">
+    <span>Trouble? <a href="mailto:e@uffelmann.me">e@uffelmann.me</a></span>
+    <span><a href="https://github.com/Schmedu/mutify">Source</a></span>
+    <span><a href="/legal">Imprint</a></span>
+  </div>
+</footer>
 
 <script type="module">
+if (!matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+  document.querySelectorAll('.defs animate').forEach((a) => a.remove());
+}
+
+const root = document.documentElement;
+document.getElementById('theme').addEventListener('click', () => {
+  const dark = root.dataset.theme
+    ? root.dataset.theme === 'dark'
+    : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+  try { localStorage.setItem('mutify-theme', root.dataset.theme); } catch {}
+});
+
 const state = document.getElementById('state');
 const params = new URLSearchParams(location.search);
 const sessionId = params.get('session_id') ?? '';
@@ -56,13 +223,14 @@ const money = (cents, cur) =>
   (cents / 100).toLocaleString('de-DE', { style: 'currency', currency: (cur ?? 'eur').toUpperCase() });
 
 function fail(head, body) {
+  document.body.dataset.state = 'fail';
   state.innerHTML = `
     <p class="eyebrow">Nothing to unlock</p>
-    <h1 style="margin-top:1.25rem">${esc(head)}</h1>
+    <h1>${esc(head)}</h1>
     <p class="lede">${esc(body)}</p>
     <div class="actions">
-      <a class="btn btn-accent" href="/#buy">Back to the page</a>
-      <a class="btn btn-quiet" href="https://github.com/Schmedu/mutify/releases/latest">Free download on GitHub</a>
+      <a class="btn btn-brand" href="/#buy">Back to the page</a>
+      <a class="btn" href="https://github.com/Schmedu/mutify/releases/latest">Free download on GitHub</a>
     </div>`;
 }
 
@@ -77,15 +245,16 @@ if (!sessionId) {
       fail("That payment hasn't cleared.", data.error ?? 'Stripe has no completed payment for this link. Nothing was charged.');
     } else {
       const href = `/api/download?session_id=${encodeURIComponent(sessionId)}`;
+      document.body.dataset.state = 'paid';
       state.innerHTML = `
         <p class="eyebrow">Paid — thank you</p>
-        <h1 style="margin-top:1.25rem">Mutify is yours.</h1>
+        <h1>Mutify is yours.</h1>
         <p class="lede">Mutify ${esc(data.version)} for macOS, signed and notarized. Keep this page — the link works as long as you have it.</p>
         <div class="actions">
-          <a class="btn btn-accent" href="${href}" id="dl">Download Mutify ${esc(data.version)}</a>
-          <a class="btn btn-quiet" href="https://github.com/Schmedu/mutify/blob/main/README.md">Read the manual</a>
+          <a class="btn btn-brand" href="${href}" id="dl">Download Mutify ${esc(data.version)}</a>
+          <a class="btn" href="https://github.com/Schmedu/mutify/blob/main/README.md">Read the manual</a>
         </div>
-        <dl class="receipt">
+        <dl class="receipt sheet">
           <div><dt>Paid</dt><dd>${esc(money(data.amount, data.currency))}</dd></div>
           ${data.email ? `<div><dt>Receipt sent to</dt><dd>${esc(data.email)}</dd></div>` : ''}
           <div><dt>Requires</dt><dd>macOS 14+, Apple Silicon</dd></div>

@@ -8,34 +8,89 @@
 <link rel="icon" href="/favicon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,200..600&family=Karla:wght@300..700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800&family=Shantell+Sans:ital,wght,BNCE,INFM@0,300..800,-100..100,0..100&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/_shared.css">
-<meta name="theme-color" content="#f7f6fb" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#16151f" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#d9d8ee" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1b1a2b" media="(prefers-color-scheme: dark)">
+<script>
+  try {
+    const t = localStorage.getItem('mutify-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+  } catch {}
+</script>
 <style>
-  section{margin-top:clamp(2.5rem,5vw,3.5rem)}
-  section h2{margin-bottom:.9rem}
-  section p + p{margin-top:.9rem}
-  p{color:var(--ink-2);max-width:62ch}
-  address{font-style:normal;color:var(--ink-2);line-height:1.7}
-  .lede{margin-top:1.5rem;font-size:1.125rem}
-  .rule{border:0;border-top:1px solid var(--rule);margin:0}
-  ul{color:var(--ink-2);max-width:62ch;padding-left:1.15rem;margin:.9rem 0 0;display:grid;gap:.5rem}
-  .de{margin-top:.6rem;font-size:.875rem;color:var(--ink-3);max-width:62ch}
-  .lead-in{margin-bottom:.9rem}
-  address strong,.de strong{color:var(--ink-2);font-weight:600}
+  body{ --page:52rem; }
+  .legal-head{ display:grid; gap:1.5rem; align-items:end; }
+  @media (min-width:44rem){ .legal-head{ grid-template-columns:1fr 9rem; } }
+  .legal-head h1{ margin-top:1rem; }
+  .lede{ margin-top:1.25rem; font-size:clamp(1.125rem,1.05rem + .35vw,1.3rem); line-height:1.5; color:var(--ink-2); max-width:44ch; }
+  .stamp{ width:9rem; justify-self:end; rotate:9deg; }
+  @media (max-width:43.99rem){ .stamp{ display:none; } }
+
+  p, ul, address{ color:var(--ink-2); max-width:62ch; }
+  section{ margin-top:clamp(2.75rem,5vw,3.75rem); }
+  section h2{ margin-bottom:1rem; }
+  section p + p{ margin-top:.9rem; }
+  section p strong, address strong, .de strong{ color:var(--ink); font-weight:700; }
+  address{ font-style:normal; line-height:1.7; }
+  .lead-in{ margin-bottom:.9rem; }
+  .de{ margin-top:.75rem; font-size:.9rem; color:var(--ink-3); }
+
+  /* each section's number, written in the margin */
+  .n{ display:block; margin-bottom:.35rem; font-family:var(--hand); font-weight:700; font-size:1rem;
+    color:var(--noise); font-variation-settings:"INFM" 80, "BNCE" 50; letter-spacing:0; rotate:-2deg; width:max-content; }
+
+  /* the imprint, taped to the page */
+  .imprint{ position:relative; padding:clamp(1.5rem,3.5vw,2.25rem); rotate:-.5deg; margin-top:clamp(2.5rem,5vw,3.5rem); }
+  .imprint::before, .imprint::after{
+    content:""; position:absolute; top:-14px; width:6.5rem; height:1.75rem;
+    background:var(--tape); box-shadow:0 1px 2px oklch(20% .03 285 / .15);
+  }
+  .imprint::before{ left:10%; rotate:-6deg; }
+  .imprint::after{ right:10%; rotate:5deg; }
+
+  .back{ margin-top:clamp(3rem,6vw,4rem); }
 </style>
 </head>
 <body>
 
-<header><div class="wrap bar"><a class="mark" href="/"><img src="/img/icon.webp" alt="" width="28" height="28"> Mutify</a></div></header>
+<svg class="defs" aria-hidden="true" focusable="false">
+  <filter id="boil" x="-10%" y="-10%" width="120%" height="120%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.03" numOctaves="1" seed="5" result="n">
+      <animate attributeName="seed" values="5;11;17;23" dur=".56s" calcMode="discrete" repeatCount="indefinite"/>
+    </feTurbulence>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="2.4" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
+
+<header>
+  <div class="wrap bar">
+    <a class="mark" href="/"><img src="/img/icon.webp" alt="" width="30" height="30"> Mutify</a>
+    <button class="theme" id="theme" type="button" aria-label="Switch between light and dark">
+      <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.5Z"/></svg>
+      <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>
+    </button>
+  </div>
+  <div class="rule" aria-hidden="true"></div>
+</header>
 
 <main><div class="wrap">
-  <p class="eyebrow">Mutify</p>
-  <h1 style="margin-top:1rem">Imprint, terms and privacy.</h1>
-  <p class="lede">Short, because there is not much to say: one person sells one small app, and the app collects nothing.</p>
+  <div class="legal-head">
+    <div>
+      <p class="eyebrow">Mutify</p>
+      <h1>Imprint, terms and privacy.</h1>
+      <p class="lede">Short, because there is not much to say: one person sells one small app, and the app collects nothing.</p>
+    </div>
+    <svg class="art stamp" viewBox="0 0 120 120" aria-hidden="true">
+      <g filter="url(#boil)">
+        <circle class="ln" cx="60" cy="60" r="50" stroke-width="4"/>
+        <circle class="ln" cx="60" cy="60" r="41" stroke-width="2.5" stroke-dasharray="3 7"/>
+        <text class="t-noise" x="60" y="84" font-size="70" text-anchor="middle">§</text>
+      </g>
+    </svg>
+  </div>
 
-  <section>
+  <section class="imprint sheet">
     <h2>Imprint — Angaben gemäß § 5 DDG</h2>
     <p class="lead-in">Diensteanbieter im Sinne des § 5 DDG:</p>
     <address>
@@ -51,27 +106,25 @@
     <p class="de">Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV: Eduard Uffelmann, Anschrift wie oben.</p>
   </section>
 
-  <hr class="rule" style="margin-top:2.5rem">
-
   <section>
-    <h2>What you are buying</h2>
+    <h2><span class="n" aria-hidden="true">01</span>What you are buying</h2>
     <p>A download of Mutify for macOS — a signed, notarized disk image containing the app. It is a one-off purchase with no subscription and no upgrade fee. It needs macOS 14 or later on an Apple Silicon Mac; it will not run on an Intel Mac.</p>
-    <p>Mutify's source code is published under the MIT licence at <a href="https://github.com/Schmedu/mutify">github.com/Schmedu/mutify</a>, and the same build is available there at no charge. Paying here is voluntary support for the work, not the only way to obtain the software. 0,99 € is the minimum; anything above that is your choice.</p>
+    <p>Mutify's source code is published under the MIT licence at <a href="https://github.com/Schmedu/mutify">github.com/Schmedu/mutify</a>, and the same build is available there at no charge. Paying here is voluntary support for the work, not the only way to obtain the software. 0,99 € is the minimum; anything above that is your choice.</p>
   </section>
 
   <section>
-    <h2>Delivery and the right of withdrawal</h2>
+    <h2><span class="n" aria-hidden="true">02</span>Delivery and the right of withdrawal</h2>
     <p>Delivery is immediate: the download link appears as soon as Stripe confirms the payment. By starting that download you agree to delivery beginning at once and acknowledge that this ends the statutory 14-day right of withdrawal for digital content (§ 356 Abs. 5 BGB).</p>
     <p>That is the legal position. The practical one: if Mutify is not what you wanted, email <a href="mailto:e@uffelmann.me">e@uffelmann.me</a> and you get your money back, no questions and no deadline.</p>
   </section>
 
   <section>
-    <h2>Payment and VAT</h2>
+    <h2><span class="n" aria-hidden="true">03</span>Payment and VAT</h2>
     <p>Payments are processed by Stripe Payments Europe, Ltd. Card details are entered on Stripe's own checkout and never reach this site — it never sees, stores or transmits them. Prices are shown with VAT included; the rate applied is the one for your country, calculated by Stripe, and your receipt itemises it.</p>
   </section>
 
   <section>
-    <h2>Privacy</h2>
+    <h2><span class="n" aria-hidden="true">04</span>Privacy</h2>
     <p><strong>The app.</strong> Mutify has no account, no server and no analytics. Your networks, your devices and your settings stay in <code>~/Library/Application&nbsp;Support/Mutify</code> on your Mac. Nothing about your location or your networks ever leaves the machine, and the app makes no network requests of its own.</p>
     <p><strong>This website.</strong> No cookies, no tracking, no analytics. The page is static; the two functions behind it talk to Stripe and to GitHub's release API and to nothing else. Vercel, which hosts it, keeps standard access logs (IP address, page, timestamp) for operating the service. Google Fonts serves the two typefaces, which means your browser contacts <code>fonts.gstatic.com</code>.</p>
     <p><strong>When you buy.</strong> Stripe receives the data it needs to take the payment, including your email address and the billing country used for VAT. It is the controller for that data under its own <a href="https://stripe.com/privacy">privacy policy</a>. I can see the resulting payment records — amount, country, email — in the Stripe dashboard, and keep them as long as German tax law requires (ten years, § 147 AO). Nothing is passed on to anyone else, and there is no mailing list.</p>
@@ -79,19 +132,36 @@
   </section>
 
   <section>
-    <h2>Liability and dispute resolution</h2>
+    <h2><span class="n" aria-hidden="true">05</span>Liability and dispute resolution</h2>
     <p>Mutify is provided under the MIT licence, which disclaims warranty to the extent the law permits. Your statutory rights as a consumer are untouched by that.</p>
     <p>The European Commission's online dispute resolution platform is at <a href="https://ec.europa.eu/consumers/odr">ec.europa.eu/consumers/odr</a>. I am neither obliged nor willing to take part in dispute resolution proceedings before a consumer arbitration board.</p>
   </section>
 
-  <p style="margin-top:3rem"><a href="/">← Back to Mutify</a></p>
+  <p class="back"><a class="btn" href="/">← Back to Mutify</a></p>
 </div></main>
 
-<footer><div class="wrap foot-row">
-  <span>Mutify — made in Berlin</span>
-  <span><a href="https://github.com/Schmedu/mutify">Source</a></span>
-  <span><a href="mailto:e@uffelmann.me">e@uffelmann.me</a></span>
-</div></footer>
+<footer>
+  <div class="rule" aria-hidden="true"></div>
+  <div class="wrap foot-row">
+    <span>Mutify — made in Berlin</span>
+    <span><a href="https://github.com/Schmedu/mutify">Source</a></span>
+    <span><a href="mailto:e@uffelmann.me">e@uffelmann.me</a></span>
+  </div>
+</footer>
 
+<script type="module">
+if (!matchMedia('(prefers-reduced-motion: no-preference)').matches) {
+  document.querySelectorAll('.defs animate').forEach((a) => a.remove());
+}
+
+const root = document.documentElement;
+document.getElementById('theme').addEventListener('click', () => {
+  const dark = root.dataset.theme
+    ? root.dataset.theme === 'dark'
+    : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+  try { localStorage.setItem('mutify-theme', root.dataset.theme); } catch {}
+});
+</script>
 </body>
 </html>

@@ -8,7 +8,7 @@ served as-is, `api/` runs on Vercel's Node runtime.
 public/index.html   the landing page, hand-drawn and animated (styles and script inline)
 public/thanks.html  where Stripe sends people afterwards
 public/legal.html   imprint, withdrawal, VAT, privacy
-public/_shared.css  the design tokens the two small pages share
+public/_shared.css  the drawn look /legal and /thanks share (tokens copied from index.html)
 api/_lib.js         Stripe over plain fetch, plus the GitHub release lookup
 api/checkout.js     POST {amount} → a Checkout Session URL
 api/download.js     GET ?session_id → 302 to the DMG, once Stripe says "paid"
